@@ -13,7 +13,9 @@ on:
       - if: ${{ event.git.ref =~ '^refs/tags/v.+$' }}
         init:
           release: true
-          commit-sha: ${{ event.git.sha }}
+          # Check out by tag name (not SHA) so the clone keeps the tag ref,
+          # which GoReleaser requires to determine the release version.
+          commit-sha: ${{ event.git.tag }}
           ref: ${{ event.git.ref }}
 
 concurrency-pools:
@@ -27,7 +29,7 @@ base:
 
 tasks:
   - key: code
-    call: git/clone 2.0.7
+    call: git/clone 2.0.8
     with:
       preserve-git-dir: true
       repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
