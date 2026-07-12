@@ -1,0 +1,33 @@
+# Publishes a release on every version tag push (e.g. v1.2.3).
+#
+# Thin wrapper that embeds .rwx/ci.yml with release: true. The embedded run
+# runs the full validation graph against the tagged commit and, only if it all
+# passes, publishes the release with GoReleaser. The tag name is passed through
+# to GoReleaser via init.tag.
+
+on:
+  github:
+    push:
+      if: ${{ event.git.tag =~ '^v.+$' }}
+      init:
+        commit-sha: ${{ event.git.sha }}
+        tag: ${{ event.git.tag }}
+
+concurrency-pools:
+  # Releases must never be cancelled mid-flight; queue if the same tag is
+  # somehow pushed again while a release is running.
+  - id: rwx-cloud/terraform-provider-rwx:release-${{ init.tag }}
+    capacity: 1
+    on-overflow: queue
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.1.1
+
+tasks:
+  - key: ci
+    call: ${{ run.dir }}/ci.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      release: true
+      tag: ${{ init.tag }}

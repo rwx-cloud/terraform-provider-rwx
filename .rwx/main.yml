@@ -1,0 +1,23 @@
+# Runs the full validation pipeline on every push to main.
+#
+# This embeds .rwx/ci.yml so main runs the identical checks as pull requests,
+# including the cross-platform release-snapshot build.
+
+on:
+  github:
+    push:
+      if: ${{ event.git.ref == "refs/heads/main" }}
+      init:
+        commit-sha: ${{ event.git.sha }}
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.1.1
+
+tasks:
+  - key: ci
+    call: ${{ run.dir }}/ci.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      release: false
+      tag: ""

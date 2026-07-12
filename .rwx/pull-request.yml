@@ -1,0 +1,29 @@
+# Runs the full validation pipeline on every pull request.
+#
+# Thin wrapper that embeds .rwx/ci.yml so PRs run the identical checks as main
+# and tag releases, including the cross-platform release-snapshot build.
+
+on:
+  github:
+    pull_request:
+      init:
+        commit-sha: ${{ event.git.sha }}
+        pr-number: ${{ event.github.pull_request.number }}
+
+concurrency-pools:
+  # Cancel superseded runs when a PR is pushed again.
+  - id: rwx-cloud/terraform-provider-rwx:pr-${{ init.pr-number }}
+    capacity: 1
+    on-overflow: cancel-running
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.1.1
+
+tasks:
+  - key: ci
+    call: ${{ run.dir }}/ci.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      release: false
+      tag: ""
