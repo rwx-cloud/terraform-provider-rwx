@@ -13,7 +13,7 @@ on:
       - if: ${{ event.git.ref =~ '^refs/tags/v.+$' }}
         init:
           release: true
-          commit-sha: ${{ event.git.ref }}
+          commit-sha: ${{ event.git.sha }}
           ref: ${{ event.git.ref }}
 
 concurrency-pools:
