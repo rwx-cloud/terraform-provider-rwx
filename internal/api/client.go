@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-// Client is an API Client for Mint
+// Client is an API Client for RWX
 type Client struct {
 	RoundTrip func(*http.Request) (*http.Response, error)
 }
@@ -26,7 +26,7 @@ func NewClient(cfg Config) (Client, error) {
 			req.URL.Host = cfg.Host
 		}
 
-		req.Header.Set("User-Agent", fmt.Sprintf("terraform-provider-mint/%s", cfg.Version))
+		req.Header.Set("User-Agent", fmt.Sprintf("terraform-provider-rwx/%s", cfg.Version))
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.AccessToken))
 
 		return http.DefaultClient.Do(req)
@@ -52,7 +52,7 @@ func (c Client) DeleteSecretInVault(vault string, secret Secret) error {
 	if resp.StatusCode != 200 && resp.StatusCode != 404 {
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return errors.New(msg)
@@ -78,7 +78,7 @@ func (c Client) DeleteVariableInVault(vault string, variable Variable) error {
 	if resp.StatusCode != 200 && resp.StatusCode != 404 {
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return errors.New(msg)
@@ -108,7 +108,7 @@ func (c Client) GetSecretMetadataInVault(vault string, secret Secret) (Secret, e
 
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return Secret{}, errors.New(msg)
@@ -142,7 +142,7 @@ func (c Client) GetVariableInVault(vault string, variable Variable) (Variable, e
 
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return Variable{}, errors.New(msg)
@@ -191,7 +191,7 @@ func (c Client) SetSecretInVault(vault string, secret Secret) (Secret, error) {
 
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return Secret{}, errors.New(msg)
@@ -248,7 +248,7 @@ func (c Client) SetVariableInVault(vault string, variable Variable) (Variable, e
 
 		msg := extractErrorMessage(resp.Body)
 		if msg == "" {
-			msg = fmt.Sprintf("Unable to call Mint API - %s", resp.Status)
+			msg = fmt.Sprintf("Unable to call RWX API - %s", resp.Status)
 		}
 
 		return Variable{}, errors.New(msg)

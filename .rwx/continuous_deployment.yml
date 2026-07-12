@@ -17,7 +17,7 @@ on:
           ref: ${{ event.git.ref }}
 
 concurrency-pools:
-  - id: rwx-research/terraform-provider-mint:cd-${{ init.ref }}
+  - id: rwx-cloud/terraform-provider-rwx:cd-${{ init.ref }}
     capacity: 1
     on-overflow: cancel-running
 
@@ -30,7 +30,7 @@ tasks:
     call: git/clone 2.0.7
     with:
       preserve-git-dir: true
-      repository: https://github.com/rwx-research/terraform-provider-mint.git
+      repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
       ref: ${{ init.commit-sha }}
 
   - key: tool-versions
@@ -124,6 +124,6 @@ tasks:
     use: [go-modules, goreleaser, import-gpg-key]
     run: goreleaser release --clean
     env:
-      GITHUB_TOKEN: ${{ vaults.default.github-apps.rwx-bot.token }}
+      GITHUB_TOKEN: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
       GPG_FINGERPRINT: ${{ tasks.import-gpg-key.values.fingerprint }}
       GPG_PASSPHRASE: ${{ vaults.terraform_provider.secrets.GPG_PASSPHRASE }}

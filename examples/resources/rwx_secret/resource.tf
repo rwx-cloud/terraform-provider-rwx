@@ -1,4 +1,4 @@
-resource "mint_secret" "example" {
+resource "rwx_secret" "example" {
   vault        = "default"
   name         = "my-secret"
   secret_value = "a-secret-token"

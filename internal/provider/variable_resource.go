@@ -7,7 +7,7 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/rwx-research/terraform-provider-mint/internal/api"
+	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	tfpath "github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,9 +47,10 @@ func (r *VariableResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manages a non-secret variable stored in an RWX vault.",
 		Attributes: map[string]schema.Attribute{
 			"vault": schema.StringAttribute{
-				Description: "The name of a vault in Mint that should hold this variable.",
+				Description: "The name of a vault in RWX that should hold this variable.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -121,7 +122,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		Value: plan.Value.ValueString(),
 	}
 
-	// Mint's backend only supports upserts to the variables. As a result, this 'create' operation
+	// RWX's backend only supports upserts to the variables. As a result, this 'create' operation
 	// could overwrite existing variables - we protect against this by explicitly checking for the
 	// existence of a variable beforehand.
 	_, err = r.client.GetVariableInVault(vault, variable)
@@ -133,7 +134,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	} else if !errors.Is(err, api.ErrNotFound) {
 		resp.Diagnostics.AddError(
-			"Error creating variable in Mint",
+			"Error creating variable in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -142,7 +143,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	_, err = r.client.SetVariableInVault(vault, variable)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating variable in Mint",
+			"Error creating variable in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -173,7 +174,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		}
 
 		resp.Diagnostics.AddError(
-			"Error reading variable from Mint",
+			"Error reading variable from RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -202,7 +203,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 	_, err = r.client.SetVariableInVault(vault, variable)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating variable in Mint",
+			"Error updating variable in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -227,7 +228,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	if err = r.client.DeleteVariableInVault(vault, variable); err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting variable in Mint",
+			"Error deleting variable in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return

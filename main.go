@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/rwx-research/terraform-provider-mint/internal/provider"
+	"github.com/rwx-cloud/terraform-provider-rwx/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -14,7 +14,7 @@ var version string = "dev"
 
 func main() {
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/rwx-research/mint",
+		Address: "registry.terraform.io/rwx-cloud/rwx",
 	}
 
 	if err := providerserver.Serve(context.Background(), provider.New(version), opts); err != nil {
