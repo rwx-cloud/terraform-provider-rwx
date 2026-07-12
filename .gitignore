@@ -1,0 +1,23 @@
+# Binaries
+terraform-provider-rwx
+dist/
+bin/
+
+# Terraform state / working files from local example runs
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# Editor / OS
+.DS_Store
+*.swp
+*~
+.idea/
+*.iml
+
+# Go
+*.test
+*.out

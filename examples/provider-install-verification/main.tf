@@ -1,20 +1,20 @@
 terraform {
   required_providers {
-    mint = {
-      source = "rwx-research/mint"
+    rwx = {
+      source = "rwx-cloud/rwx"
     }
   }
 }
 
-provider "mint" {}
+provider "rwx" {}
 
-resource "mint_secret" "test" {
+resource "rwx_secret" "test" {
   vault        = "default"
   name         = "foobar"
   secret_value = "test"
 }
 
-resource "mint_variable" "test" {
+resource "rwx_variable" "test" {
   vault = "default"
   name  = "foo"
   value = "bar"

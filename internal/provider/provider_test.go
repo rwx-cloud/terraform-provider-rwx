@@ -9,11 +9,11 @@ const (
 	// Shared config for acceptance tests.
 	// We keep this empty and utilize environment variables instead for testing
 	//
-	// 	MINT_HOST        for setting the host
+	// 	RWX_HOST        for setting the host
 	//	RWX_ACCESS_TOKEN for the access token
 	//
 	providerConfig = `
-provider "mint" {}
+provider "rwx" {}
 `
 )
 
@@ -23,6 +23,6 @@ var (
 	// CLI command executed to create a provider server to which the CLI can
 	// reattach.
 	testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-		"mint": providerserver.NewProtocol6WithError(New("test")()),
+		"rwx": providerserver.NewProtocol6WithError(New("test")()),
 	}
 )

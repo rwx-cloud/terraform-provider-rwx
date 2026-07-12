@@ -13,21 +13,21 @@ func TestVariableResource(t *testing.T) {
 			// Create and Read testing
 			{
 				Config: providerConfig + `
-resource "mint_variable" "test" {
+resource "rwx_variable" "test" {
   vault = "terraform_provider_testing"
   name  = "test-var"
   value = "foo"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("mint_variable.test", "vault", "terraform_provider_testing"),
-					resource.TestCheckResourceAttr("mint_variable.test", "name", "test-var"),
-					resource.TestCheckResourceAttr("mint_variable.test", "value", "foo"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "name", "test-var"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "value", "foo"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:                         "mint_variable.test",
+				ResourceName:                         "rwx_variable.test",
 				ImportState:                          true,
 				ImportStateId:                        "terraform_provider_testing/test-var",
 				ImportStateVerify:                    true,
@@ -36,16 +36,16 @@ resource "mint_variable" "test" {
 			// Update and Read testing
 			{
 				Config: providerConfig + `
-resource "mint_variable" "test" {
+resource "rwx_variable" "test" {
   vault = "terraform_provider_testing"
   name  = "test-var"
   value = "bar"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("mint_variable.test", "vault", "terraform_provider_testing"),
-					resource.TestCheckResourceAttr("mint_variable.test", "name", "test-var"),
-					resource.TestCheckResourceAttr("mint_variable.test", "value", "bar"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "name", "test-var"),
+					resource.TestCheckResourceAttr("rwx_variable.test", "value", "bar"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

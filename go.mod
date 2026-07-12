@@ -1,4 +1,4 @@
-module github.com/rwx-research/terraform-provider-mint
+module github.com/rwx-cloud/terraform-provider-rwx
 
 go 1.24.0
 

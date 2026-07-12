@@ -13,7 +13,7 @@ func TestSecretResource(t *testing.T) {
 			// Create and Read testing
 			{
 				Config: providerConfig + `
-resource "mint_secret" "test" {
+resource "rwx_secret" "test" {
   vault        = "terraform_provider_testing"
   name         = "test-secret"
   secret_value = "foo"
@@ -21,26 +21,26 @@ resource "mint_secret" "test" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("mint_secret.test", "vault", "terraform_provider_testing"),
-					resource.TestCheckResourceAttr("mint_secret.test", "name", "test-secret"),
-					resource.TestCheckResourceAttr("mint_secret.test", "secret_value", "foo"),
-					resource.TestCheckResourceAttr("mint_secret.test", "description", "a description"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "name", "test-secret"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "secret_value", "foo"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "description", "a description"),
 				),
 			},
 			// Update and Read testing
 			{
 				Config: providerConfig + `
-resource "mint_secret" "test" {
+resource "rwx_secret" "test" {
   vault        = "terraform_provider_testing"
   name         = "test-secret"
   secret_value = "bar"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("mint_secret.test", "vault", "terraform_provider_testing"),
-					resource.TestCheckResourceAttr("mint_secret.test", "name", "test-secret"),
-					resource.TestCheckResourceAttr("mint_secret.test", "secret_value", "bar"),
-					resource.TestCheckNoResourceAttr("mint_secret.test", "description"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "name", "test-secret"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "secret_value", "bar"),
+					resource.TestCheckNoResourceAttr("rwx_secret.test", "description"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

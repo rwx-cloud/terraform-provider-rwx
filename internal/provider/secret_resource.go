@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/rwx-research/terraform-provider-mint/internal/api"
+	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -46,9 +46,10 @@ func (r *SecretResource) Metadata(ctx context.Context, req resource.MetadataRequ
 
 func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manages a secret stored in an RWX vault.",
 		Attributes: map[string]schema.Attribute{
 			"vault": schema.StringAttribute{
-				Description: "The name of a vault in Mint that should hold this secret.",
+				Description: "The name of a vault in RWX that should hold this secret.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -126,7 +127,7 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 		Description: plan.Description.ValueString(),
 	}
 
-	// Mint's backend only supports upserts to the secrets. As a result, this 'create' operation
+	// RWX's backend only supports upserts to the secrets. As a result, this 'create' operation
 	// could overwrite existing secrets - we protect against this by explicitly checking for the
 	// existence of a secret beforehand.
 	_, err = r.client.GetSecretMetadataInVault(vault, secret)
@@ -138,7 +139,7 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	} else if !errors.Is(err, api.ErrNotFound) {
 		resp.Diagnostics.AddError(
-			"Error creating secret in Mint",
+			"Error creating secret in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -147,7 +148,7 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 	secret, err = r.client.SetSecretInVault(vault, secret)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating secret in Mint",
+			"Error creating secret in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -180,7 +181,7 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 		}
 
 		resp.Diagnostics.AddError(
-			"Error reading secret metadata from Mint",
+			"Error reading secret metadata from RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -222,7 +223,7 @@ func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest,
 	secret, err = r.client.SetSecretInVault(vault, secret)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating secret in Mint",
+			"Error updating secret in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
@@ -249,7 +250,7 @@ func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	if err = r.client.DeleteSecretInVault(vault, secret); err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting secret in Mint",
+			"Error deleting secret in RWX",
 			"Unexpected error: "+err.Error(),
 		)
 		return
