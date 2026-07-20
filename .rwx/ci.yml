@@ -1,0 +1,190 @@
+# Full validation + release pipeline for the provider.
+#
+# This definition is the single source of truth for "what must be green" AND
+# for how a release is cut. It's embedded by .rwx/pull-request.yml,
+# .rwx/main.yml, and .rwx/tag.yml so every trigger runs the exact same graph
+# with no duplication. It also carries a `cli` trigger so you can iterate
+# locally with `rwx run .rwx/ci.yml`.
+#
+# Every trigger runs the exact same `goreleaser release --clean`; the `release`
+# init flag only changes which steps GoReleaser skips:
+#   - release: false (PR / main / cli) -> `--skip=validate,publish,sign`, so it
+#     cross-compiles, archives, and checksums every target but publishes
+#     nothing. A broken build is caught on the PR, not during a release. No
+#     publish/sign credentials are referenced on this path, so they never enter
+#     a PR or main run environment.
+#   - release: true (tag)              -> `--skip=validate` only, so it also
+#     signs and publishes to GitHub.
+# These are two mutually-exclusive tasks purely so the publish credentials stay
+# out of untrusted PR runs; on a tag only the publishing task runs, so there's
+# still just one cross-compile.
+#
+# Because we always clone by commit SHA at full depth, the release is built
+# from the identical tree the checks validated. The tag value is passed to
+# GoReleaser out-of-band via GORELEASER_CURRENT_TAG rather than inferred from
+# git (`--skip=validate` covers the missing tag ref), so the release doesn't
+# depend on the tag ref being fetched. The changelog is disabled in
+# .goreleaser.yml, so no tag history is needed either.
+
+on:
+  cli:
+    init:
+      commit-sha: ${{ event.git.sha }}
+      release: false
+      tag: ""
+
+tool-cache:
+  vault: terraform_provider
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.1.1
+
+tasks:
+  - key: code
+    call: git/clone 2.0.8
+    with:
+      preserve-git-dir: true
+      fetch-full-depth: true
+      repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
+      ref: ${{ init.commit-sha }}
+
+  - key: tool-versions
+    use: code
+    call: rwx/tool-versions 1.0.8
+    filter:
+      - .tool-versions
+
+  - key: go
+    call: golang/install 1.2.2
+    with:
+      go-version: ${{ tasks.tool-versions.values.golang }}
+
+  - key: golangci-lint
+    use: go
+    run: |
+      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v${{ tasks.tool-versions.values.golangci-lint }}
+
+  - key: terraform
+    call: hashicorp/install-terraform 1.0.13
+    with:
+      terraform-version: ${{ tasks.tool-versions.values.terraform }}
+
+  - key: goreleaser
+    run: |
+      curl -sfLO "$RELEASES_URL/download/$VERSION/$TAR_FILE"
+      tmpdir=$(mktemp -d)
+      tar -xf $TAR_FILE -C $tmpdir
+      sudo install ${tmpdir}/goreleaser /usr/local/bin
+      rm $TAR_FILE
+      rm -rf $tmpdir
+    env:
+      VERSION: "v${{ tasks.tool-versions.values.goreleaser }}"
+      RELEASES_URL: "https://github.com/goreleaser/goreleaser/releases"
+      TAR_FILE: "goreleaser_Linux_x86_64.tar.gz"
+
+  - key: go-modules
+    use: [code, go]
+    run: |
+      go mod download -x
+      cd tools
+      go mod download -x
+    tool-cache: go-modules
+    filter:
+      - go.mod
+      - go.sum
+      - tools/go.mod
+      - tools/go.sum
+
+  - key: go-mod-tidy
+    use: go-modules
+    run: |
+      go mod tidy
+      git diff --exit-code
+
+  - key: build
+    use: go-modules
+    run: go build -v .
+
+  - key: lint
+    use: [go-modules, golangci-lint]
+    run: golangci-lint run --timeout=10m
+
+  - key: docs
+    use: [go-modules, terraform]
+    run: |
+      pushd tools
+        go generate ./...
+      popd
+      git diff --exit-code
+
+  - key: test
+    use: [go-modules, terraform]
+    run: go test -v ./...
+    env:
+      TF_ACC: 1
+      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
+
+  # The real release build on every non-tag run: identical to the `release`
+  # task below except publish + sign are skipped (they need credentials and a
+  # real tag). This is what surfaces a broken build/archive/checksum config on
+  # the PR instead of during a release. No publish/sign credentials are
+  # referenced, so they never enter PR or main run environments. A synthetic
+  # tag is supplied because there's no real one; the version is irrelevant
+  # since nothing is published.
+  - key: release-dry-run
+    if: ${{ !init.release }}
+    use: [go-modules, goreleaser]
+    run: goreleaser release --clean --skip=validate,publish,sign
+    env:
+      GORELEASER_CURRENT_TAG: v0.0.0-ci
+
+  # Prove the compiled provider is a valid plugin that Terraform can load and
+  # configure end-to-end: build the binary, point Terraform at it with a dev
+  # override, and run `terraform plan` against the install-verification example.
+  - key: verify-provider
+    use: [go-modules, terraform]
+    run: |
+      plugin_dir="$(mktemp -d)"
+      go build -o "${plugin_dir}/terraform-provider-rwx" .
+
+      export TF_CLI_CONFIG_FILE="$(mktemp)"
+      cat > "$TF_CLI_CONFIG_FILE" <<EOF
+      provider_installation {
+        dev_overrides {
+          "rwx-cloud/rwx" = "${plugin_dir}"
+        }
+        direct {}
+      }
+      EOF
+
+      cd examples/provider-install-verification
+      # dev_overrides makes Terraform skip `init` and use the local binary.
+      terraform plan
+    env:
+      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
+
+  # Release-only tasks. Gated on init.release, so they're absent on PR/main/cli.
+  - key: import-gpg-key
+    if: ${{ init.release }}
+    run: |
+      gpg --import --batch --yes << EOF
+      ${{ vaults.terraform_provider.secrets.GPG_PRIVATE_KEY }}
+      EOF
+      gpg --with-colons --fingerprint security@rwx.com | awk -F':' '$1=="pub"{print $5}' > "${RWX_VALUES}/fingerprint"
+
+  # Publish the release. Gated on all checks passing first, and built from the
+  # same clone. The tag is supplied via GORELEASER_CURRENT_TAG instead of git
+  # inference; `--skip=validate` is required because we clone by SHA, so the
+  # tag ref isn't present locally (the changelog is disabled in .goreleaser.yml,
+  # so no tag history is needed either).
+  - key: release
+    if: ${{ init.release }}
+    after: [build, lint, docs, test, go-mod-tidy, verify-provider]
+    use: [go-modules, goreleaser, import-gpg-key]
+    run: goreleaser release --clean --skip=validate
+    env:
+      GORELEASER_CURRENT_TAG: ${{ init.tag }}
+      GITHUB_TOKEN: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
+      GPG_FINGERPRINT: ${{ tasks.import-gpg-key.values.fingerprint }}
+      GPG_PASSPHRASE: ${{ vaults.terraform_provider.secrets.GPG_PASSPHRASE }}
