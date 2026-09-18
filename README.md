@@ -9,7 +9,7 @@ The [RWX Provider](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://go.dev/doc/install) >= 1.24 (to build the provider from source)
+- [Go](https://go.dev/doc/install) >= 1.25.8 (to build the provider from source)
 
 ## Using the provider
 
