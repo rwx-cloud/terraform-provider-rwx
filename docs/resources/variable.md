@@ -33,6 +33,8 @@ resource "rwx_variable" "example" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Variables can be imported by specifying the vault & variable name
 terraform import rwx_variable.example default/my-var
