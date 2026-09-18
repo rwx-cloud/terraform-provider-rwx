@@ -66,7 +66,7 @@ tasks:
       curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v${{ tasks.tool-versions.values.golangci-lint }}
 
   - key: terraform
-    call: hashicorp/install-terraform 1.1.0
+    call: hashicorp/install-terraform 1.1.2
     with:
       terraform-version: ${{ tasks.tool-versions.values.terraform }}
 
