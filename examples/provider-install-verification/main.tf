@@ -19,3 +19,9 @@ resource "rwx_variable" "test" {
   name  = "foo"
   value = "bar"
 }
+
+resource "rwx_oidc_token" "test" {
+  vault    = "default"
+  name     = "terraform-provider-verification"
+  audience = "terraform-provider-verification"
+}
