@@ -109,10 +109,11 @@ TF_ACC=1 RWX_ACCESS_TOKEN=<your-token> go test ./... -v
 ## Releasing
 
 Releases are cut by pushing a semver tag (e.g. `v1.2.3`). The
-[`.rwx/continuous_deployment.yml`](.rwx/continuous_deployment.yml) pipeline runs
-the build, lint, docs, and test tasks, then runs
-[GoReleaser](https://goreleaser.com) to build, GPG-sign, and publish the release
-artifacts that the Terraform Registry ingests.
+[tag pipeline](.rwx/tag.yml) runs the same validation used for pull requests and
+`main`, including the build, lint, generated docs check, acceptance tests, and
+provider installation check. [GoReleaser](https://goreleaser.com) then builds,
+GPG-signs, and publishes the release artifacts that the Terraform Registry
+ingests.
 
 ## License
 
