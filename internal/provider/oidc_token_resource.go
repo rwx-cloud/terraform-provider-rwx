@@ -34,13 +34,12 @@ type OIDCTokenResource struct {
 }
 
 type OIDCTokenResourceModel struct {
-	ID               types.String `tfsdk:"id"`
-	Vault            types.String `tfsdk:"vault"`
-	Name             types.String `tfsdk:"name"`
-	Audience         types.String `tfsdk:"audience"`
-	Subject          types.String `tfsdk:"subject"`
-	Expression       types.String `tfsdk:"expression"`
-	DocumentationURL types.String `tfsdk:"documentation_url"`
+	ID         types.String `tfsdk:"id"`
+	Vault      types.String `tfsdk:"vault"`
+	Name       types.String `tfsdk:"name"`
+	Audience   types.String `tfsdk:"audience"`
+	Subject    types.String `tfsdk:"subject"`
+	Expression types.String `tfsdk:"expression"`
 }
 
 func (r *OIDCTokenResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -93,10 +92,6 @@ func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"expression": schema.StringAttribute{
 				Description: "The expression used to reference the OIDC token in an RWX run.",
-				Computed:    true,
-			},
-			"documentation_url": schema.StringAttribute{
-				Description: "The RWX documentation URL for this OIDC token definition.",
 				Computed:    true,
 			},
 		},
@@ -275,12 +270,11 @@ func (r *OIDCTokenResource) ImportState(ctx context.Context, req resource.Import
 
 func oidcTokenResourceModel(token api.OIDCToken) OIDCTokenResourceModel {
 	return OIDCTokenResourceModel{
-		ID:               types.StringValue(token.ID),
-		Vault:            types.StringValue(token.Vault.Name),
-		Name:             types.StringValue(token.Name),
-		Audience:         types.StringValue(token.Audience),
-		Subject:          types.StringValue(token.Subject),
-		Expression:       types.StringValue(token.Expression),
-		DocumentationURL: types.StringValue(token.DocumentationURL),
+		ID:         types.StringValue(token.ID),
+		Vault:      types.StringValue(token.Vault.Name),
+		Name:       types.StringValue(token.Name),
+		Audience:   types.StringValue(token.Audience),
+		Subject:    types.StringValue(token.Subject),
+		Expression: types.StringValue(token.Expression),
 	}
 }

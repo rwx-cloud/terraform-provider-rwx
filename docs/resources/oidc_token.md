@@ -31,7 +31,6 @@ resource "rwx_oidc_token" "example" {
 
 ### Read-Only
 
-- `documentation_url` (String) The RWX documentation URL for this OIDC token definition.
 - `expression` (String) The expression used to reference the OIDC token in an RWX run.
 - `id` (String) The ID of the OIDC token definition.
 - `subject` (String) The subject claim included in issued tokens.

@@ -10,13 +10,12 @@ import (
 )
 
 type OIDCToken struct {
-	ID               string `json:"id"`
-	Vault            Vault  `json:"vault"`
-	Name             string `json:"name"`
-	Audience         string `json:"audience"`
-	Subject          string `json:"subject"`
-	Expression       string `json:"expression"`
-	DocumentationURL string `json:"documentation_url"`
+	ID         string `json:"id"`
+	Vault      Vault  `json:"vault"`
+	Name       string `json:"name"`
+	Audience   string `json:"audience"`
+	Subject    string `json:"subject"`
+	Expression string `json:"expression"`
 }
 
 type Vault struct {
