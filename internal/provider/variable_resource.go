@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"regexp"
+	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -24,6 +24,7 @@ var (
 	_ resource.Resource                = &VariableResource{}
 	_ resource.ResourceWithConfigure   = &VariableResource{}
 	_ resource.ResourceWithImportState = &VariableResource{}
+	_ resource.ResourceWithModifyPlan  = &VariableResource{}
 )
 
 func NewVariableResource() resource.Resource {
@@ -36,9 +37,10 @@ type VariableResource struct {
 
 // VariableResourceModel describes the resource data model.
 type VariableResourceModel struct {
-	Vault types.String `tfsdk:"vault"`
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
+	Vault   types.String `tfsdk:"vault"`
+	VaultID types.String `tfsdk:"vault_id"`
+	Name    types.String `tfsdk:"name"`
+	Value   types.String `tfsdk:"value"`
 }
 
 func (r *VariableResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -49,20 +51,10 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Description: "Manages a non-secret variable stored in an RWX vault.",
 		Attributes: map[string]schema.Attribute{
-			"vault": schema.StringAttribute{
-				Description: "The name of a vault in RWX that should hold this variable.",
-				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9_-]*$`),
-						"can only include alphanumeric characters, dashes, or underscores",
-					),
-				},
-			},
+			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this variable."),
+			"vault_id": vaultIDAttribute(
+				"The stable ID of the RWX vault that should hold this variable. Reference rwx_vault.<name>.id for managed vaults.",
+			),
 			"name": schema.StringAttribute{
 				Description: "The name of the variable itself.",
 				Required:    true,
@@ -107,6 +99,33 @@ func (r *VariableResource) Configure(ctx context.Context, req resource.Configure
 	r.client = client
 }
 
+func (r *VariableResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var state VariableResourceModel
+	var plan VariableResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requiresReplace, selectorDiags := vaultSelectorsRequireReplace(r.client, state.vaultSelector(), plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if requiresReplace {
+		resp.RequiresReplace = append(resp.RequiresReplace, vaultReplacementPath(plan.vaultSelector()))
+	}
+}
+
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var err error
 	var plan VariableResourceModel
@@ -116,7 +135,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	vault := plan.Vault.ValueString()
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), "")
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	variable := api.Variable{
 		Name:  plan.Name.ValueString(),
 		Value: plan.Value.ValueString(),
@@ -129,7 +153,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	if err == nil {
 		resp.Diagnostics.AddError(
 			"Variable already exists in Vault - please choose a different name or vault",
-			fmt.Sprintf("Vault %q already contains a variable with name %q", vault, variable.Name),
+			fmt.Sprintf("Vault %q already contains a variable with name %q", vaultID, variable.Name),
 		)
 		return
 	} else if !errors.Is(err, api.ErrNotFound) {
@@ -149,6 +173,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -161,7 +191,18 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	vault := state.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	variable := api.Variable{
 		Name: state.Name.ValueString(),
 	}
@@ -181,6 +222,12 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	state.Value = types.StringValue(variable.Value)
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -188,13 +235,38 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var err error
 	var plan VariableResourceModel
+	var state VariableResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	vault := plan.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
+
+	if state.Value.Equal(plan.Value) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+		return
+	}
+
+	vault := api.VaultSelector{ID: vaultID}
 	variable := api.Variable{
 		Name:  plan.Name.ValueString(),
 		Value: plan.Value.ValueString(),
@@ -221,7 +293,18 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	vault := state.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	variable := api.Variable{
 		Name: state.Name.ValueString(),
 	}
@@ -236,12 +319,34 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	vault, name := path.Split(req.ID)
+	parts := strings.Split(req.ID, "/")
+	var selectorPath tfpath.Path
+	var selector string
+	var name string
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		selectorPath = tfpath.Root("vault")
+		selector = parts[0]
+		name = parts[1]
+	} else if len(parts) == 3 && parts[0] == "vault_id" && parts[1] != "" && parts[2] != "" {
+		selectorPath = tfpath.Root("vault_id")
+		selector = parts[1]
+		name = parts[2]
+	} else {
+		resp.Diagnostics.AddError(
+			"Invalid variable import ID",
+			"Use vault-name/variable-name or vault_id/vault-id/variable-name.",
+		)
+		return
+	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tfpath.Root("vault"), path.Clean(vault))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, selectorPath, selector)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tfpath.Root("name"), name)...)
+}
+
+func (m VariableResourceModel) vaultSelector() vaultSelectorModel {
+	return vaultSelectorModel{vault: m.Vault, vaultID: m.VaultID}
 }

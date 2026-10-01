@@ -13,8 +13,12 @@ Manages a secret stored in an RWX vault.
 ## Example Usage
 
 ```terraform
+resource "rwx_vault" "example" {
+  name = "example"
+}
+
 resource "rwx_secret" "example" {
-  vault        = "default"
+  vault_id     = rwx_vault.example.id
   name         = "my-secret"
   secret_value = "a-secret-token"
   description  = "holds a secret token"
@@ -28,8 +32,9 @@ resource "rwx_secret" "example" {
 
 - `name` (String) The name of the secret itself.
 - `secret_value` (String, Sensitive) The secret value.
-- `vault` (String) The name of a vault in RWX that should hold this secret.
 
 ### Optional
 
 - `description` (String) An optional description of this secret.
+- `vault` (String) The name of a vault in RWX that should hold this secret.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults.

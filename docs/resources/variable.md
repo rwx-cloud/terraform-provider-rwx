@@ -13,10 +13,14 @@ Manages a non-secret variable stored in an RWX vault.
 ## Example Usage
 
 ```terraform
+resource "rwx_vault" "example" {
+  name = "example"
+}
+
 resource "rwx_variable" "example" {
-  vault = "default"
-  name  = "my-variable"
-  value = "foobar"
+  vault_id = rwx_vault.example.id
+  name     = "my-variable"
+  value    = "foobar"
 }
 ```
 
@@ -27,7 +31,11 @@ resource "rwx_variable" "example" {
 
 - `name` (String) The name of the variable itself.
 - `value` (String) The value of this variable.
+
+### Optional
+
 - `vault` (String) The name of a vault in RWX that should hold this variable.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this variable. Reference rwx_vault.<name>.id for managed vaults.
 
 ## Import
 
@@ -36,6 +44,9 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Variables can be imported by specifying the vault & variable name
+# Import with a vault name.
 terraform import rwx_variable.example default/my-var
+
+# Import with a vault ID.
+terraform import rwx_variable.example vault_id/00000000-0000-0000-0000-000000000000/my-var
 ```

@@ -20,8 +20,9 @@ import (
 
 // Ensure that the resource satisfies various framework interfaces.
 var (
-	_ resource.Resource              = &SecretResource{}
-	_ resource.ResourceWithConfigure = &SecretResource{}
+	_ resource.Resource               = &SecretResource{}
+	_ resource.ResourceWithConfigure  = &SecretResource{}
+	_ resource.ResourceWithModifyPlan = &SecretResource{}
 )
 
 func NewSecretResource() resource.Resource {
@@ -35,6 +36,7 @@ type SecretResource struct {
 // SecretResourceModel describes the resource data model.
 type SecretResourceModel struct {
 	Vault       types.String `tfsdk:"vault"`
+	VaultID     types.String `tfsdk:"vault_id"`
 	Name        types.String `tfsdk:"name"`
 	SecretValue types.String `tfsdk:"secret_value"`
 	Description types.String `tfsdk:"description"`
@@ -48,20 +50,10 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Description: "Manages a secret stored in an RWX vault.",
 		Attributes: map[string]schema.Attribute{
-			"vault": schema.StringAttribute{
-				Description: "The name of a vault in RWX that should hold this secret.",
-				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9_-]*$`),
-						"can only include alphanumeric characters, dashes, or underscores",
-					),
-				},
-			},
+			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this secret."),
+			"vault_id": vaultIDAttribute(
+				"The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults.",
+			),
 			"name": schema.StringAttribute{
 				Description: "The name of the secret itself.",
 				Required:    true,
@@ -111,6 +103,33 @@ func (r *SecretResource) Configure(ctx context.Context, req resource.ConfigureRe
 	r.client = client
 }
 
+func (r *SecretResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var state SecretResourceModel
+	var plan SecretResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requiresReplace, selectorDiags := vaultSelectorsRequireReplace(r.client, state.vaultSelector(), plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if requiresReplace {
+		resp.RequiresReplace = append(resp.RequiresReplace, vaultReplacementPath(plan.vaultSelector()))
+	}
+}
+
 func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var err error
 	var plan SecretResourceModel
@@ -120,7 +139,12 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	vault := plan.Vault.ValueString()
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), "")
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	secret := api.Secret{
 		Name:        plan.Name.ValueString(),
 		SecretValue: plan.SecretValue.ValueString(),
@@ -134,7 +158,7 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 	if err == nil {
 		resp.Diagnostics.AddError(
 			"Secret already exists in Vault - please choose a different name or vault",
-			fmt.Sprintf("Vault %q already contains a secret with name %q", vault, secret.Name),
+			fmt.Sprintf("Vault %q already contains a secret with name %q", vaultID, secret.Name),
 		)
 		return
 	} else if !errors.Is(err, api.ErrNotFound) {
@@ -155,6 +179,12 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	resp.Private.SetKey(ctx, "version", []byte(strconv.Itoa(secret.Version)))
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -168,7 +198,18 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	vault := state.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	secret := api.Secret{
 		Name: state.Name.ValueString(),
 	}
@@ -200,6 +241,12 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if strconv.Itoa(secret.Version) != string(version) {
 		state.SecretValue = types.StringValue("")
 	}
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -207,13 +254,38 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var err error
 	var plan SecretResourceModel
+	var state SecretResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	vault := plan.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing vault state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
+
+	if state.SecretValue.Equal(plan.SecretValue) && state.Description.Equal(plan.Description) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+		return
+	}
+
+	vault := api.VaultSelector{ID: vaultID}
 	secret := api.Secret{
 		Name:        plan.Name.ValueString(),
 		SecretValue: plan.SecretValue.ValueString(),
@@ -243,7 +315,18 @@ func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	vault := state.Vault.ValueString()
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vault := api.VaultSelector{ID: vaultID}
 	secret := api.Secret{
 		Name: state.Name.ValueString(),
 	}
@@ -255,4 +338,8 @@ func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		)
 		return
 	}
+}
+
+func (m SecretResourceModel) vaultSelector() vaultSelectorModel {
+	return vaultSelectorModel{vault: m.Vault, vaultID: m.VaultID}
 }

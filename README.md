@@ -1,6 +1,6 @@
 # Terraform RWX Provider
 
-The [RWX Provider](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs) enables [Terraform](https://terraform.io) to manage [RWX](https://www.rwx.com) resources such as vault secrets, variables, and OIDC tokens.
+The [RWX Provider](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs) enables [Terraform](https://terraform.io) to manage [RWX](https://www.rwx.com) vaults, secrets, variables, and OIDC tokens.
 
 > **Migrating from `rwx-research/mint`?** This provider is the successor to the
 > [`terraform-provider-mint`](https://registry.terraform.io/providers/rwx-research/mint) provider.
@@ -27,21 +27,25 @@ provider "rwx" {
   access_token = var.rwx_access_token
 }
 
+resource "rwx_vault" "example" {
+  name = "example"
+}
+
 resource "rwx_secret" "example" {
-  vault        = "default"
+  vault_id     = rwx_vault.example.id
   name         = "my-secret"
   secret_value = "a-secret-token"
   description  = "holds a secret token"
 }
 
 resource "rwx_variable" "example" {
-  vault = "default"
-  name  = "my-variable"
-  value = "some-value"
+  vault_id = rwx_vault.example.id
+  name     = "my-variable"
+  value    = "some-value"
 }
 
 resource "rwx_oidc_token" "example" {
-  vault    = "default"
+  vault_id = rwx_vault.example.id
   name     = "aws"
   audience = "sts.amazonaws.com"
 }

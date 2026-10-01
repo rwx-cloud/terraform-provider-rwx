@@ -1,5 +1,9 @@
+resource "rwx_vault" "example" {
+  name = "example"
+}
+
 resource "rwx_variable" "example" {
-  vault = "default"
-  name  = "my-variable"
-  value = "foobar"
+  vault_id = rwx_vault.example.id
+  name     = "my-variable"
+  value    = "foobar"
 }

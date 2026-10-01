@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -13,8 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -23,6 +20,7 @@ var (
 	_ resource.Resource                = &OIDCTokenResource{}
 	_ resource.ResourceWithConfigure   = &OIDCTokenResource{}
 	_ resource.ResourceWithImportState = &OIDCTokenResource{}
+	_ resource.ResourceWithModifyPlan  = &OIDCTokenResource{}
 )
 
 func NewOIDCTokenResource() resource.Resource {
@@ -36,6 +34,7 @@ type OIDCTokenResource struct {
 type OIDCTokenResourceModel struct {
 	ID         types.String `tfsdk:"id"`
 	Vault      types.String `tfsdk:"vault"`
+	VaultID    types.String `tfsdk:"vault_id"`
 	Name       types.String `tfsdk:"name"`
 	Audience   types.String `tfsdk:"audience"`
 	Subject    types.String `tfsdk:"subject"`
@@ -54,20 +53,10 @@ func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaReque
 				Description: "The ID of the OIDC token definition.",
 				Computed:    true,
 			},
-			"vault": schema.StringAttribute{
-				Description: "The name of the RWX vault that holds the OIDC token definition.",
-				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9_-]*$`),
-						"can only include alphanumeric characters, dashes, or underscores",
-					),
-				},
-			},
+			"vault": vaultNameAttribute("The name of the RWX vault that holds the OIDC token definition."),
+			"vault_id": vaultIDAttribute(
+				"The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults.",
+			),
 			"name": schema.StringAttribute{
 				Description: "The name of the OIDC token definition.",
 				Required:    true,
@@ -115,6 +104,33 @@ func (r *OIDCTokenResource) Configure(ctx context.Context, req resource.Configur
 	r.client = client
 }
 
+func (r *OIDCTokenResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var state OIDCTokenResourceModel
+	var plan OIDCTokenResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
+	resp.Diagnostics.Append(diags...)
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	requiresReplace, selectorDiags := vaultSelectorsRequireReplace(r.client, state.vaultSelector(), plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if requiresReplace {
+		resp.RequiresReplace = append(resp.RequiresReplace, vaultReplacementPath(plan.vaultSelector()))
+	}
+}
+
 func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan OIDCTokenResourceModel
 
@@ -123,7 +139,13 @@ func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	token, err := r.client.CreateOIDCToken(plan.Vault.ValueString(), api.OIDCToken{
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), "")
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	token, err := r.client.CreateOIDCToken(api.VaultSelector{ID: vaultID}, api.OIDCToken{
 		Name:     plan.Name.ValueString(),
 		Audience: plan.Audience.ValueString(),
 	})
@@ -131,7 +153,7 @@ func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateReque
 		if errors.Is(err, api.ErrConflict) {
 			resp.Diagnostics.AddError(
 				"OIDC token already exists",
-				fmt.Sprintf("Vault %q already contains an OIDC token named %q. Import the existing token by its ID or choose a different name.", plan.Vault.ValueString(), plan.Name.ValueString()),
+				fmt.Sprintf("Vault %q already contains an OIDC token named %q. Import the existing token by its ID or choose a different name.", vaultID, plan.Name.ValueString()),
 			)
 			return
 		}
@@ -140,13 +162,13 @@ func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	state := oidcTokenResourceModel(token)
-	vaultID, err := json.Marshal(token.Vault.ID)
+	state := oidcTokenResourceModel(token, plan.vaultSelector())
+	encodedVaultID, err := encodePrivateVaultID(token.Vault.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Error storing OIDC token state", "Unexpected error: "+err.Error())
 		return
 	}
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", vaultID)...)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -158,20 +180,25 @@ func (r *OIDCTokenResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	vaultIDJSON, diags := req.Private.GetKey(ctx, "vault_id")
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var token api.OIDCToken
 	var err error
-	if len(vaultIDJSON) == 0 {
+	if previousID == "" && configuredVaultSelector(state.vaultSelector()) == (api.VaultSelector{}) {
 		token, err = r.client.FindOIDCToken(state.ID.ValueString())
 	} else {
 		var vaultID string
-		if err := json.Unmarshal(vaultIDJSON, &vaultID); err != nil {
-			resp.Diagnostics.AddError("Error reading OIDC token state", "Unexpected error: "+err.Error())
+		vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+		resp.Diagnostics.Append(selectorDiags...)
+		if resp.Diagnostics.HasError() {
 			return
 		}
 		token, err = r.client.GetOIDCToken(vaultID, state.ID.ValueString())
@@ -186,13 +213,13 @@ func (r *OIDCTokenResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	state = oidcTokenResourceModel(token)
-	vaultID, err := json.Marshal(token.Vault.ID)
+	state = oidcTokenResourceModel(token, state.vaultSelector())
+	encodedVaultID, err := encodePrivateVaultID(token.Vault.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Error storing OIDC token state", "Unexpected error: "+err.Error())
 		return
 	}
-	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", vaultID)...)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -206,14 +233,31 @@ func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	vaultIDJSON, diags := req.Private.GetKey(ctx, "vault_id")
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	var vaultID string
-	if err := json.Unmarshal(vaultIDJSON, &vaultID); err != nil {
-		resp.Diagnostics.AddError("Error reading OIDC token state", "Unexpected error: "+err.Error())
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	encodedVaultID, err := encodePrivateVaultID(vaultID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error storing OIDC token state", "Unexpected error: "+err.Error())
+		return
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
+
+	if state.Name.Equal(plan.Name) && state.Audience.Equal(plan.Audience) {
+		state.Vault = plan.Vault
+		state.VaultID = plan.VaultID
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 		return
 	}
 
@@ -226,7 +270,7 @@ func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateReque
 		if errors.Is(err, api.ErrConflict) {
 			resp.Diagnostics.AddError(
 				"OIDC token name is already in use",
-				fmt.Sprintf("Vault %q already contains another OIDC token named %q.", plan.Vault.ValueString(), plan.Name.ValueString()),
+				fmt.Sprintf("Vault %q already contains another OIDC token named %q.", vaultID, plan.Name.ValueString()),
 			)
 			return
 		}
@@ -235,7 +279,7 @@ func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	state = oidcTokenResourceModel(token)
+	state = oidcTokenResourceModel(token, plan.vaultSelector())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -247,14 +291,18 @@ func (r *OIDCTokenResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	vaultIDJSON, diags := req.Private.GetKey(ctx, "vault_id")
+	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	var vaultID string
-	if err := json.Unmarshal(vaultIDJSON, &vaultID); err != nil {
-		resp.Diagnostics.AddError("Error reading OIDC token state", "Unexpected error: "+err.Error())
+	previousID := privateVaultID(privateValue, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	resp.Diagnostics.Append(selectorDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -268,13 +316,22 @@ func (r *OIDCTokenResource) ImportState(ctx context.Context, req resource.Import
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
-func oidcTokenResourceModel(token api.OIDCToken) OIDCTokenResourceModel {
+func oidcTokenResourceModel(token api.OIDCToken, selector vaultSelectorModel) OIDCTokenResourceModel {
+	if selector.vault.IsNull() && selector.vaultID.IsNull() {
+		selector.vault = types.StringValue(token.Vault.Name)
+	}
+
 	return OIDCTokenResourceModel{
 		ID:         types.StringValue(token.ID),
-		Vault:      types.StringValue(token.Vault.Name),
+		Vault:      selector.vault,
+		VaultID:    selector.vaultID,
 		Name:       types.StringValue(token.Name),
 		Audience:   types.StringValue(token.Audience),
 		Subject:    types.StringValue(token.Subject),
 		Expression: types.StringValue(token.Expression),
 	}
+}
+
+func (m OIDCTokenResourceModel) vaultSelector() vaultSelectorModel {
+	return vaultSelectorModel{vault: m.Vault, vaultID: m.VaultID}
 }

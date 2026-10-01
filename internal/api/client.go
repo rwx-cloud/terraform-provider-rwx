@@ -35,10 +35,10 @@ func NewClient(cfg Config) (Client, error) {
 	return Client{roundTrip}, nil
 }
 
-func (c Client) DeleteSecretInVault(vault string, secret Secret) error {
+func (c Client) DeleteSecretInVault(vault VaultSelector, secret Secret) error {
 	endpoint := "/mint/api/vaults/secrets"
 
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s?vault_name=%s", endpoint, secret.Name, vault), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s?%s", endpoint, secret.Name, vaultSelectorQuery(vault)), nil)
 	if err != nil {
 		return fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
@@ -61,10 +61,10 @@ func (c Client) DeleteSecretInVault(vault string, secret Secret) error {
 	return nil
 }
 
-func (c Client) DeleteVariableInVault(vault string, variable Variable) error {
+func (c Client) DeleteVariableInVault(vault VaultSelector, variable Variable) error {
 	endpoint := "/mint/api/vaults/vars"
 
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s?vault_name=%s", endpoint, variable.Name, vault), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/%s?%s", endpoint, variable.Name, vaultSelectorQuery(vault)), nil)
 	if err != nil {
 		return fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
@@ -87,10 +87,10 @@ func (c Client) DeleteVariableInVault(vault string, variable Variable) error {
 	return nil
 }
 
-func (c Client) GetSecretMetadataInVault(vault string, secret Secret) (Secret, error) {
+func (c Client) GetSecretMetadataInVault(vault VaultSelector, secret Secret) (Secret, error) {
 	endpoint := "/mint/api/vaults/secrets"
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s?vault_name=%s", endpoint, secret.Name, vault), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s?%s", endpoint, secret.Name, vaultSelectorQuery(vault)), nil)
 	if err != nil {
 		return Secret{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
@@ -121,10 +121,10 @@ func (c Client) GetSecretMetadataInVault(vault string, secret Secret) (Secret, e
 	return secret, nil
 }
 
-func (c Client) GetVariableInVault(vault string, variable Variable) (Variable, error) {
+func (c Client) GetVariableInVault(vault VaultSelector, variable Variable) (Variable, error) {
 	endpoint := "/mint/api/vaults/vars"
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s?vault_name=%s", endpoint, variable.Name, vault), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s?%s", endpoint, variable.Name, vaultSelectorQuery(vault)), nil)
 	if err != nil {
 		return Variable{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
@@ -155,15 +155,18 @@ func (c Client) GetVariableInVault(vault string, variable Variable) (Variable, e
 	return variable, nil
 }
 
-func (c Client) SetSecretInVault(vault string, secret Secret) (Secret, error) {
+func (c Client) SetSecretInVault(vault VaultSelector, secret Secret) (Secret, error) {
 	endpoint := "/mint/api/vaults/secrets"
+	vaultID, vaultName := vaultSelectorBody(vault)
 
 	requestBody := struct {
 		Secrets   []Secret `json:"secrets"`
-		VaultName string   `json:"vault_name"`
+		VaultID   string   `json:"vault_id,omitempty"`
+		VaultName string   `json:"vault_name,omitempty"`
 	}{
 		Secrets:   []Secret{secret},
-		VaultName: vault,
+		VaultID:   vaultID,
+		VaultName: vaultName,
 	}
 
 	encodedBody, err := json.Marshal(requestBody)
@@ -212,15 +215,18 @@ func (c Client) SetSecretInVault(vault string, secret Secret) (Secret, error) {
 	return secret, nil
 }
 
-func (c Client) SetVariableInVault(vault string, variable Variable) (Variable, error) {
+func (c Client) SetVariableInVault(vault VaultSelector, variable Variable) (Variable, error) {
 	endpoint := "/mint/api/vaults/vars"
+	vaultID, vaultName := vaultSelectorBody(vault)
 
 	requestBody := struct {
 		Var       Variable `json:"var"`
-		VaultName string   `json:"vault_name"`
+		VaultID   string   `json:"vault_id,omitempty"`
+		VaultName string   `json:"vault_name,omitempty"`
 	}{
 		Var:       variable,
-		VaultName: vault,
+		VaultID:   vaultID,
+		VaultName: vaultName,
 	}
 
 	encodedBody, err := json.Marshal(requestBody)
