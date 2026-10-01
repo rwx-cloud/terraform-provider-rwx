@@ -13,8 +13,12 @@ Manages an OIDC token definition stored in an RWX vault.
 ## Example Usage
 
 ```terraform
+resource "rwx_vault" "example" {
+  name = "example"
+}
+
 resource "rwx_oidc_token" "example" {
-  vault    = "default"
+  vault_id = rwx_vault.example.id
   name     = "aws"
   audience = "sts.amazonaws.com"
 }
@@ -27,7 +31,11 @@ resource "rwx_oidc_token" "example" {
 
 - `audience` (String) The audience claim included in tokens issued from this definition.
 - `name` (String) The name of the OIDC token definition.
+
+### Optional
+
 - `vault` (String) The name of the RWX vault that holds the OIDC token definition.
+- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults.
 
 ### Read-Only
 
