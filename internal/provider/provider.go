@@ -122,8 +122,10 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewOIDCTokenResource,
 		NewSecretResource,
 		NewVariableResource,
+		NewVaultApproverResource,
 		NewVaultResource,
 		NewVaultServiceAccountAccessGrantResource,
+		NewVaultServiceAccountAttachmentResource,
 		NewVaultUserAccessGrantResource,
 	}
 }
