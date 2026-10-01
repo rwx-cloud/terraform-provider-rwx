@@ -34,7 +34,7 @@ func (p *RwxProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 
 func (p *RwxProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The RWX provider enables Terraform to manage RWX vaults, secrets, variables, and OIDC tokens.",
+		Description: "The RWX provider enables Terraform to manage RWX vaults, access grants, secrets, variables, and OIDC tokens.",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Description: "The URI for RWX's API. Default: cloud.rwx.com. This attribute may also be provided via the RWX_HOST environment variable. It is usually only needed for testing or development of the Terraform provider itself.",
@@ -123,6 +123,8 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewSecretResource,
 		NewVariableResource,
 		NewVaultResource,
+		NewVaultServiceAccountAccessGrantResource,
+		NewVaultUserAccessGrantResource,
 	}
 }
 
