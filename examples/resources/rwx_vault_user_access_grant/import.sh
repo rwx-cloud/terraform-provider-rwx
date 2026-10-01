@@ -1,0 +1,1 @@
+terraform import rwx_vault_user_access_grant.example 00000000-0000-0000-0000-000000000000
