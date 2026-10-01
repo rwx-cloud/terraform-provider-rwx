@@ -12,6 +12,8 @@ type Vault struct {
 	ID                    string                      `json:"id"`
 	Name                  string                      `json:"name"`
 	LockStatus            string                      `json:"lock_status"`
+	ApprovalsEnabled      bool                        `json:"approvals_enabled"`
+	RequiredApprovals     int64                       `json:"required_approvals"`
 	RepositoryPermissions []VaultRepositoryPermission `json:"repository_permissions"`
 	OIDCSubject           string                      `json:"oidc_subject"`
 }
@@ -116,15 +118,21 @@ func (c Client) FindVaultByName(name string) (Vault, error) {
 func vaultRequest(vault Vault) struct {
 	Name                  string                      `json:"name"`
 	Unlocked              bool                        `json:"unlocked"`
+	ApprovalsEnabled      bool                        `json:"approvals_enabled"`
+	RequiredApprovals     int64                       `json:"required_approvals"`
 	RepositoryPermissions []VaultRepositoryPermission `json:"repository_permissions"`
 } {
 	return struct {
 		Name                  string                      `json:"name"`
 		Unlocked              bool                        `json:"unlocked"`
+		ApprovalsEnabled      bool                        `json:"approvals_enabled"`
+		RequiredApprovals     int64                       `json:"required_approvals"`
 		RepositoryPermissions []VaultRepositoryPermission `json:"repository_permissions"`
 	}{
 		Name:                  vault.Name,
 		Unlocked:              vault.LockStatus == "unlocked",
+		ApprovalsEnabled:      vault.ApprovalsEnabled,
+		RequiredApprovals:     vault.RequiredApprovals,
 		RepositoryPermissions: vault.RepositoryPermissions,
 	}
 }
