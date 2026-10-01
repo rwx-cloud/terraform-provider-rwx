@@ -92,6 +92,52 @@ func TestVaultResource(t *testing.T) {
 	})
 }
 
+func TestVaultResourceDependenciesAndSelectorMigration(t *testing.T) {
+	name := fmt.Sprintf("terraform-provider-dependencies-%d", time.Now().UnixNano())
+	secretName := "test-secret"
+	var vaultID string
+	var secretVersion int
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: vaultDependenciesConfig(name, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rwx_secret.test", "vault", name),
+					resource.TestCheckResourceAttr("rwx_variable.test", "vault", name),
+					func(state *terraform.State) error {
+						vaultID = state.RootModule().Resources["rwx_vault.test"].Primary.Attributes["id"]
+						secret, err := vaultTestClient(t).GetSecretMetadataInVault(api.VaultSelector{ID: vaultID}, api.Secret{Name: secretName})
+						if err != nil {
+							return err
+						}
+						secretVersion = secret.Version
+						return nil
+					},
+				),
+			},
+			{
+				Config: vaultDependenciesConfig(name, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttribute("rwx_secret.test", "vault_id", &vaultID),
+					checkResourceAttribute("rwx_variable.test", "vault_id", &vaultID),
+					checkSecretVersion(t, &vaultID, secretName, &secretVersion),
+				),
+			},
+			{
+				Config: vaultDependenciesConfig(name+"-renamed", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttribute("rwx_vault.test", "id", &vaultID),
+					checkResourceAttribute("rwx_secret.test", "vault_id", &vaultID),
+					checkResourceAttribute("rwx_variable.test", "vault_id", &vaultID),
+					checkSecretVersion(t, &vaultID, secretName, &secretVersion),
+				),
+			},
+		},
+	})
+}
+
 func vaultConfig(name string, unlocked bool, branchPattern string) string {
 	return providerConfig + fmt.Sprintf(`
 resource "rwx_vault" "test" {
@@ -104,6 +150,56 @@ resource "rwx_vault" "test" {
   }]
 }
 `, name, unlocked, branchPattern)
+}
+
+func vaultDependenciesConfig(name string, useID bool) string {
+	selector := "vault = rwx_vault.test.name"
+	if useID {
+		selector = "vault_id = rwx_vault.test.id"
+	}
+
+	return providerConfig + fmt.Sprintf(`
+resource "rwx_vault" "test" {
+  name = %q
+}
+
+resource "rwx_secret" "test" {
+  %s
+  name         = "test-secret"
+  secret_value = "secret-value"
+}
+
+resource "rwx_variable" "test" {
+  %s
+  name  = "test-variable"
+  value = "variable-value"
+}
+`, name, selector, selector)
+}
+
+func checkResourceAttribute(resourceName string, attribute string, want *string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		got := state.RootModule().Resources[resourceName].Primary.Attributes[attribute]
+		if got != *want {
+			return fmt.Errorf("%s.%s = %q, want %q", resourceName, attribute, got, *want)
+		}
+		return nil
+	}
+}
+
+func checkSecretVersion(t *testing.T, vaultID *string, secretName string, want *int) resource.TestCheckFunc {
+	t.Helper()
+
+	return func(*terraform.State) error {
+		secret, err := vaultTestClient(t).GetSecretMetadataInVault(api.VaultSelector{ID: *vaultID}, api.Secret{Name: secretName})
+		if err != nil {
+			return err
+		}
+		if secret.Version != *want {
+			return fmt.Errorf("secret version changed from %d to %d", *want, secret.Version)
+		}
+		return nil
+	}
 }
 
 func vaultTestClient(t *testing.T) api.Client {

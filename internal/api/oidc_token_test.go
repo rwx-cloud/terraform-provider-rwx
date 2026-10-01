@@ -38,7 +38,7 @@ func TestCreateOIDCToken(t *testing.T) {
 }`), nil
 	}}
 
-	token, err := client.CreateOIDCToken("my-vault", OIDCToken{Name: "aws", Audience: "sts.amazonaws.com"})
+	token, err := client.CreateOIDCToken(VaultSelector{Name: "my-vault"}, OIDCToken{Name: "aws", Audience: "sts.amazonaws.com"})
 	if err != nil {
 		t.Fatal(err)
 	}

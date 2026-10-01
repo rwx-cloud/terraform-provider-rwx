@@ -18,17 +18,15 @@ type OIDCToken struct {
 	Expression string `json:"expression"`
 }
 
-type Vault struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func (c Client) CreateOIDCToken(vaultName string, token OIDCToken) (OIDCToken, error) {
+func (c Client) CreateOIDCToken(selector VaultSelector, token OIDCToken) (OIDCToken, error) {
+	vaultID, vaultName := vaultSelectorBody(selector)
 	body := struct {
-		VaultName string `json:"vault_name"`
+		VaultID   string `json:"vault_id,omitempty"`
+		VaultName string `json:"vault_name,omitempty"`
 		Name      string `json:"name"`
 		Audience  string `json:"audience"`
 	}{
+		VaultID:   vaultID,
 		VaultName: vaultName,
 		Name:      token.Name,
 		Audience:  token.Audience,
@@ -86,7 +84,7 @@ func (c Client) DeleteOIDCToken(vaultID string, tokenID string) error {
 }
 
 func (c Client) FindOIDCToken(tokenID string) (OIDCToken, error) {
-	vaults, err := c.listVaults()
+	vaults, err := c.ListVaults()
 	if err != nil {
 		return OIDCToken{}, err
 	}
@@ -102,32 +100,6 @@ func (c Client) FindOIDCToken(tokenID string) (OIDCToken, error) {
 	}
 
 	return OIDCToken{}, ErrNotFound
-}
-
-func (c Client) listVaults() ([]Vault, error) {
-	req, err := http.NewRequest(http.MethodGet, "/mint/api/vaults", nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
-	}
-
-	resp, err := c.RoundTrip(req)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, responseError(resp)
-	}
-
-	var response struct {
-		Vaults []Vault `json:"vaults"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("unable to decode JSON response: %w", err)
-	}
-
-	return response.Vaults, nil
 }
 
 func (c Client) writeOIDCToken(method string, endpoint string, body any, expectedStatus int) (OIDCToken, error) {
