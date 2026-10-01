@@ -14,8 +14,10 @@ Manages an RWX vault.
 
 ```terraform
 resource "rwx_vault" "example" {
-  name     = "example"
-  unlocked = false
+  name               = "example"
+  unlocked           = false
+  approvals_enabled  = true
+  required_approvals = 2
 
   repository_permissions = [{
     repository_slug = "rwx-cloud/example"
@@ -33,7 +35,9 @@ resource "rwx_vault" "example" {
 
 ### Optional
 
+- `approvals_enabled` (Boolean) Whether access to the vault requires approval.
 - `repository_permissions` (Attributes Set) The repositories and branches that can access the vault. (see [below for nested schema](#nestedatt--repository_permissions))
+- `required_approvals` (Number) The number of approvals required to access the vault.
 - `unlocked` (Boolean) Whether the vault can be accessed without an explicit access grant.
 
 ### Read-Only

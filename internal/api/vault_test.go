@@ -20,16 +20,18 @@ func TestCreateVault(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got, want := string(body), `{"name":"deploys","unlocked":true,"repository_permissions":[{"repository_slug":"rwx-cloud/cloud","branch_pattern":"main"}]}`; got != want {
+		if got, want := string(body), `{"name":"deploys","unlocked":true,"approvals_enabled":true,"required_approvals":2,"repository_permissions":[{"repository_slug":"rwx-cloud/cloud","branch_pattern":"main"}]}`; got != want {
 			t.Fatalf("body = %s, want %s", got, want)
 		}
 
-		return jsonResponse(http.StatusCreated, `{"vault":{"id":"vault-id","name":"deploys","lock_status":"unlocked","repository_permissions":[{"repository_slug":"rwx-cloud/cloud","branch_pattern":"main"}],"oidc_subject":"org:example:vault:deploys"}}`), nil
+		return jsonResponse(http.StatusCreated, `{"vault":{"id":"vault-id","name":"deploys","lock_status":"unlocked","approvals_enabled":true,"required_approvals":2,"repository_permissions":[{"repository_slug":"rwx-cloud/cloud","branch_pattern":"main"}],"oidc_subject":"org:example:vault:deploys"}}`), nil
 	}}
 
 	vault, err := client.CreateVault(Vault{
-		Name:       "deploys",
-		LockStatus: "unlocked",
+		Name:              "deploys",
+		LockStatus:        "unlocked",
+		ApprovalsEnabled:  true,
+		RequiredApprovals: 2,
 		RepositoryPermissions: []VaultRepositoryPermission{
 			{RepositorySlug: "rwx-cloud/cloud", BranchPattern: "main"},
 		},
@@ -37,7 +39,7 @@ func TestCreateVault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if vault.ID != "vault-id" || vault.OIDCSubject != "org:example:vault:deploys" {
+	if vault.ID != "vault-id" || vault.OIDCSubject != "org:example:vault:deploys" || !vault.ApprovalsEnabled || vault.RequiredApprovals != 2 {
 		t.Fatalf("unexpected vault: %#v", vault)
 	}
 }
@@ -53,6 +55,33 @@ func TestGetVaultNotFound(t *testing.T) {
 	_, err := client.GetVault("vault-id")
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("error = %v, want ErrNotFound", err)
+	}
+}
+
+func TestUpdateVaultApprovalSettings(t *testing.T) {
+	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, want := string(body), `{"name":"deploys","unlocked":false,"approvals_enabled":true,"required_approvals":3,"repository_permissions":null}`; got != want {
+			t.Fatalf("body = %s, want %s", got, want)
+		}
+
+		return jsonResponse(http.StatusOK, `{"vault":{"id":"vault-id","name":"deploys","lock_status":"locked","approvals_enabled":true,"required_approvals":3,"repository_permissions":[]}}`), nil
+	}}
+
+	vault, err := client.UpdateVault(Vault{
+		ID:                "vault-id",
+		Name:              "deploys",
+		ApprovalsEnabled:  true,
+		RequiredApprovals: 3,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !vault.ApprovalsEnabled || vault.RequiredApprovals != 3 {
+		t.Fatalf("unexpected vault: %#v", vault)
 	}
 }
 

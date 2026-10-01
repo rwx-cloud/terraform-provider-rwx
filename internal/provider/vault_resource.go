@@ -8,6 +8,7 @@ import (
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -47,6 +49,8 @@ type VaultResourceModel struct {
 	ID                    types.String `tfsdk:"id"`
 	Name                  types.String `tfsdk:"name"`
 	Unlocked              types.Bool   `tfsdk:"unlocked"`
+	ApprovalsEnabled      types.Bool   `tfsdk:"approvals_enabled"`
+	RequiredApprovals     types.Int64  `tfsdk:"required_approvals"`
 	RepositoryPermissions types.Set    `tfsdk:"repository_permissions"`
 	OIDCSubject           types.String `tfsdk:"oidc_subject"`
 }
@@ -87,6 +91,21 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
+			},
+			"approvals_enabled": schema.BoolAttribute{
+				Description: "Whether access to the vault requires approval.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			"required_approvals": schema.Int64Attribute{
+				Description: "The number of approvals required to access the vault.",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(1),
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
 			},
 			"repository_permissions": schema.SetNestedAttribute{
 				Description: "The repositories and branches that can access the vault.",
@@ -264,6 +283,8 @@ func vaultFromResourceModel(ctx context.Context, model VaultResourceModel) (api.
 		ID:                    model.ID.ValueString(),
 		Name:                  model.Name.ValueString(),
 		LockStatus:            lockStatus,
+		ApprovalsEnabled:      model.ApprovalsEnabled.ValueBool(),
+		RequiredApprovals:     model.RequiredApprovals.ValueInt64(),
 		RepositoryPermissions: apiPermissions,
 		OIDCSubject:           model.OIDCSubject.ValueString(),
 	}, diags
@@ -283,6 +304,8 @@ func vaultResourceModel(ctx context.Context, vault api.Vault) (VaultResourceMode
 		ID:                    types.StringValue(vault.ID),
 		Name:                  types.StringValue(vault.Name),
 		Unlocked:              types.BoolValue(vault.LockStatus == "unlocked"),
+		ApprovalsEnabled:      types.BoolValue(vault.ApprovalsEnabled),
+		RequiredApprovals:     types.Int64Value(vault.RequiredApprovals),
 		RepositoryPermissions: permissionSet,
 		OIDCSubject:           types.StringValue(vault.OIDCSubject),
 	}, diags
