@@ -118,12 +118,26 @@ TF_ACC=1 RWX_ACCESS_TOKEN=<your-token> go test ./... -v
 
 ## Releasing
 
-Releases are cut by pushing a semver tag (e.g. `v1.2.3`). The
-[tag pipeline](.rwx/tag.yml) runs the same validation used for pull requests and
-`main`, including the build, lint, generated docs check, acceptance tests, and
-provider installation check. [GoReleaser](https://goreleaser.com) then builds,
-GPG-signs, and publishes the release artifacts that the Terraform Registry
-ingests.
+We release with the
+`terraform-provider-rwx-tag-release` dispatch. Provide the semver tag to create (for
+example, `v1.2.3`). Leave the ref empty to tag the latest commit on `main`, or
+select a specific commit SHA already on `main`. Use the RWX Dispatch UI or the CLI:
+
+```
+# Current main
+rwx dispatch terraform-provider-rwx-tag-release --param tag=v1.2.0
+
+# Specific SHA already on main
+rwx dispatch terraform-provider-rwx-tag-release \
+  --ref <sha> \
+  --param tag=v1.2.0
+```
+
+The dispatch creates and pushes the tag. The [tag pipeline](.rwx/tag.yml) then
+runs the same validation used for pull requests and `main`, including the build,
+lint, generated docs check, acceptance tests, and provider installation check.
+[GoReleaser](https://goreleaser.com) builds, GPG-signs, and publishes the release
+artifacts that the Terraform Registry ingests after validation succeeds.
 
 ## License
 
