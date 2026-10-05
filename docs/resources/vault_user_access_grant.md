@@ -3,12 +3,12 @@
 page_title: "rwx_vault_user_access_grant Resource - rwx"
 subcategory: ""
 description: |-
-  Manages access to a locked RWX vault for an RWX user.
+  Manages access to a locked RWX vault for an RWX user. Learn more about locked vaults https://www.rwx.com/docs/vaults#locked-vaults.
 ---
 
 # rwx_vault_user_access_grant (Resource)
 
-Manages access to a locked RWX vault for an RWX user.
+Manages access to a locked RWX vault for an RWX user. Learn more about [locked vaults](https://www.rwx.com/docs/vaults#locked-vaults).
 
 ## Example Usage
 

@@ -49,7 +49,8 @@ func (r *VariableResource) Metadata(ctx context.Context, req resource.MetadataRe
 
 func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a non-secret variable stored in an RWX vault.",
+		Description:         "Manages a non-secret variable stored in an RWX vault.",
+		MarkdownDescription: "Manages a non-secret variable stored in an RWX vault. Learn more about [vars](https://www.rwx.com/docs/vars).",
 		Attributes: map[string]schema.Attribute{
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this variable."),
 			"vault_id": vaultIDAttribute(

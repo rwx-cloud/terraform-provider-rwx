@@ -77,7 +77,8 @@ func (r *accessGrantResource) Schema(ctx context.Context, req resource.SchemaReq
 	}
 
 	resp.Schema = schema.Schema{
-		Description: "Manages access to a locked RWX vault for an RWX " + r.principalLabel() + ".",
+		Description:         "Manages access to a locked RWX vault for an RWX " + r.principalLabel() + ".",
+		MarkdownDescription: "Manages access to a locked RWX vault for an RWX " + r.principalLabel() + ". Learn more about [locked vaults](https://www.rwx.com/docs/vaults#locked-vaults).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the access grant.",

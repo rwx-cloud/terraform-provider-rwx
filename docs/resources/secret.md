@@ -3,12 +3,12 @@
 page_title: "rwx_secret Resource - rwx"
 subcategory: ""
 description: |-
-  Manages a secret stored in an RWX vault.
+  Manages a secret stored in an RWX vault. Learn more about secrets https://www.rwx.com/docs/secrets.
 ---
 
 # rwx_secret (Resource)
 
-Manages a secret stored in an RWX vault.
+Manages a secret stored in an RWX vault. Learn more about [secrets](https://www.rwx.com/docs/secrets).
 
 ## Example Usage
 

@@ -47,7 +47,8 @@ func (r *VaultServiceAccountAttachmentResource) Metadata(ctx context.Context, re
 
 func (r *VaultServiceAccountAttachmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Attaches a service account to an RWX vault for task-scoped token access.",
+		Description:         "Attaches a service account to an RWX vault for task-scoped token access.",
+		MarkdownDescription: "Attaches a service account to an RWX vault for task-scoped token access. Learn more about [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the service-account attachment.",

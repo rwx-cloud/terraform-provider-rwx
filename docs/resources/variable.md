@@ -3,12 +3,12 @@
 page_title: "rwx_variable Resource - rwx"
 subcategory: ""
 description: |-
-  Manages a non-secret variable stored in an RWX vault.
+  Manages a non-secret variable stored in an RWX vault. Learn more about vars https://www.rwx.com/docs/vars.
 ---
 
 # rwx_variable (Resource)
 
-Manages a non-secret variable stored in an RWX vault.
+Manages a non-secret variable stored in an RWX vault. Learn more about [vars](https://www.rwx.com/docs/vars).
 
 ## Example Usage
 
