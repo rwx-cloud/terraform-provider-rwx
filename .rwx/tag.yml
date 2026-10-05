@@ -1,9 +1,4 @@
 # Publishes a release on every version tag push (e.g. v1.2.3).
-#
-# Thin wrapper that embeds .rwx/ci.yml with release: true. The embedded run
-# runs the full validation graph against the tagged commit and, only if it all
-# passes, publishes the release with GoReleaser. The tag name is passed through
-# to GoReleaser via init.tag.
 
 on:
   github:
@@ -29,5 +24,10 @@ tasks:
     call: ${{ run.dir }}/ci.yml
     init:
       commit-sha: ${{ init.commit-sha }}
-      release: true
+
+  - key: release
+    call: ${{ run.dir }}/release.yml
+    after: ci
+    init:
+      commit-sha: ${{ init.commit-sha }}
       tag: ${{ init.tag }}

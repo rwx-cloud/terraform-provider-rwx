@@ -25,5 +25,3 @@ tasks:
     call: ${{ run.dir }}/ci.yml
     init:
       commit-sha: ${{ init.commit-sha }}
-      release: false
-      tag: ""

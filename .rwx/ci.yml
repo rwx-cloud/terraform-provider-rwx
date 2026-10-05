@@ -1,37 +1,9 @@
-# Full validation + release pipeline for the provider.
-#
-# This definition is the single source of truth for "what must be green" AND
-# for how a release is cut. It's embedded by .rwx/pull-request.yml,
-# .rwx/main.yml, and .rwx/tag.yml so every trigger runs the exact same graph
-# with no duplication. It also carries a `cli` trigger so you can iterate
-# locally with `rwx run .rwx/ci.yml`.
-#
-# Every trigger runs the exact same `goreleaser release --clean`; the `release`
-# init flag only changes which steps GoReleaser skips:
-#   - release: false (PR / main / cli) -> `--skip=validate,publish,sign`, so it
-#     cross-compiles, archives, and checksums every target but publishes
-#     nothing. A broken build is caught on the PR, not during a release. No
-#     publish/sign credentials are referenced on this path, so they never enter
-#     a PR or main run environment.
-#   - release: true (tag)              -> `--skip=validate` only, so it also
-#     signs and publishes to GitHub.
-# These are two mutually-exclusive tasks purely so the publish credentials stay
-# out of untrusted PR runs; on a tag only the publishing task runs, so there's
-# still just one cross-compile.
-#
-# Because we always clone by commit SHA at full depth, the release is built
-# from the identical tree the checks validated. The tag value is passed to
-# GoReleaser out-of-band via GORELEASER_CURRENT_TAG rather than inferred from
-# git (`--skip=validate` covers the missing tag ref), so the release doesn't
-# depend on the tag ref being fetched. The changelog is disabled in
-# .goreleaser.yml, so no tag history is needed either.
+# Full validation pipeline for the provider.
 
 on:
   cli:
     init:
       commit-sha: ${{ event.git.sha }}
-      release: false
-      tag: ""
 
 tool-cache:
   vault: terraform_provider
@@ -125,15 +97,7 @@ tasks:
       TF_ACC: 1
       RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
 
-  # The real release build on every non-tag run: identical to the `release`
-  # task below except publish + sign are skipped (they need credentials and a
-  # real tag). This is what surfaces a broken build/archive/checksum config on
-  # the PR instead of during a release. No publish/sign credentials are
-  # referenced, so they never enter PR or main run environments. A synthetic
-  # tag is supplied because there's no real one; the version is irrelevant
-  # since nothing is published.
   - key: release-dry-run
-    if: ${{ !init.release }}
     use: [go-modules, goreleaser]
     run: goreleaser release --clean --skip=validate,publish,sign
     env:
@@ -163,28 +127,3 @@ tasks:
       terraform plan
     env:
       RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
-
-  # Release-only tasks. Gated on init.release, so they're absent on PR/main/cli.
-  - key: import-gpg-key
-    if: ${{ init.release }}
-    run: |
-      gpg --import --batch --yes << EOF
-      ${{ vaults.terraform_provider.secrets.GPG_PRIVATE_KEY }}
-      EOF
-      gpg --with-colons --fingerprint security@rwx.com | awk -F':' '$1=="pub"{print $5}' > "${RWX_VALUES}/fingerprint"
-
-  # Publish the release. Gated on all checks passing first, and built from the
-  # same clone. The tag is supplied via GORELEASER_CURRENT_TAG instead of git
-  # inference; `--skip=validate` is required because we clone by SHA, so the
-  # tag ref isn't present locally (the changelog is disabled in .goreleaser.yml,
-  # so no tag history is needed either).
-  - key: release
-    if: ${{ init.release }}
-    after: [build, lint, docs, test, go-mod-tidy, verify-provider]
-    use: [go-modules, goreleaser, import-gpg-key]
-    run: goreleaser release --clean --skip=validate
-    env:
-      GORELEASER_CURRENT_TAG: ${{ init.tag }}
-      GITHUB_TOKEN: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
-      GPG_FINGERPRINT: ${{ tasks.import-gpg-key.values.fingerprint }}
-      GPG_PASSPHRASE: ${{ vaults.terraform_provider.secrets.GPG_PASSPHRASE }}

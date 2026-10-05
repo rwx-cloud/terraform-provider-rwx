@@ -1,0 +1,59 @@
+on:
+  dispatch:
+    key: terraform-provider-rwx-tag-release
+    params:
+      - key: tag
+        name: Version tag
+        description: The release tag in vMAJOR.MINOR.PATCH format.
+        required: true
+    title: Tag release ${{ init.tag }}
+    init:
+      commit-sha: ${{ event.git.sha }}
+      tag: ${{ event.dispatch.params.tag }}
+
+concurrency-pools:
+  - id: rwx-cloud/terraform-provider-rwx:release-${{ init.tag }}
+    capacity: 1
+    on-overflow: queue
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.2.0
+
+tasks:
+  - key: code
+    call: git/clone 2.2.0
+    with:
+      preserve-git-dir: true
+      fetch-full-depth: true
+      repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
+      ref: ${{ init.commit-sha }}
+      github-token: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
+
+  - key: create-tag
+    use: code
+    cache: false
+    run: |
+      if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "Tag must match vMAJOR.MINOR.PATCH; received: $TAG" >&2
+        exit 1
+      fi
+
+      git fetch origin refs/heads/main:refs/remotes/origin/main
+      if ! git merge-base --is-ancestor "$COMMIT_SHA" refs/remotes/origin/main; then
+        echo "Commit $COMMIT_SHA is not on main" >&2
+        exit 1
+      fi
+
+      if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+        echo "Tag already exists: $TAG" >&2
+        exit 1
+      fi
+
+      git tag -a "$TAG" "$COMMIT_SHA" -m "$TAG"
+      git show --no-patch "$TAG"
+      git push origin "refs/tags/$TAG"
+    env:
+      COMMIT_SHA: ${{ init.commit-sha }}
+      GITHUB_TOKEN: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
+      TAG: ${{ init.tag }}
