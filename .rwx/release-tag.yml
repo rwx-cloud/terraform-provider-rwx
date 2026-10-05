@@ -50,7 +50,7 @@ tasks:
         exit 1
       fi
 
-      git tag -a "$TAG" "$COMMIT_SHA" -m "$TAG"
+      git tag "$TAG" "$COMMIT_SHA"
       git show --no-patch "$TAG"
       git push origin "refs/tags/$TAG"
     env:
