@@ -21,3 +21,6 @@ crash.*.log
 # Go
 *.test
 *.out
+
+# Amp orb service portals
+/.amp/portals/*

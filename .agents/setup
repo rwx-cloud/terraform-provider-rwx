@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+rwx_url="https://github.com/rwx-cloud/rwx/releases/download/latest/rwx-linux-x86_64"
+rwx_download="$(mktemp)"
+trap 'rm -f "$rwx_download"' EXIT
+
+echo "Installing the latest RWX CLI from GitHub..."
+time curl -fsSL "$rwx_url" -o "$rwx_download"
+sudo install -m 0755 "$rwx_download" /usr/local/bin/rwx
+
+rwx --version
