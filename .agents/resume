@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v rwx >/dev/null
