@@ -3,12 +3,12 @@
 page_title: "rwx_vault_service_account_attachment Resource - rwx"
 subcategory: ""
 description: |-
-  Attaches a service account to an RWX vault for task-scoped token access.
+  Attaches a service account to an RWX vault for task-scoped token access. Learn more about assuming a service account in a task https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task.
 ---
 
 # rwx_vault_service_account_attachment (Resource)
 
-Attaches a service account to an RWX vault for task-scoped token access.
+Attaches a service account to an RWX vault for task-scoped token access. Learn more about [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).
 
 ## Example Usage
 

@@ -3,12 +3,12 @@
 page_title: "rwx_vault_approver Resource - rwx"
 subcategory: ""
 description: |-
-  Manages a user who can approve access to an RWX vault.
+  Manages a user who can approve access to an RWX vault. Learn more about vault approvals https://www.rwx.com/docs/vaults#approvals.
 ---
 
 # rwx_vault_approver (Resource)
 
-Manages a user who can approve access to an RWX vault.
+Manages a user who can approve access to an RWX vault. Learn more about [vault approvals](https://www.rwx.com/docs/vaults#approvals).
 
 ## Example Usage
 

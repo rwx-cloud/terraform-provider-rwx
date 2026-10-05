@@ -3,12 +3,12 @@
 page_title: "rwx_vault Resource - rwx"
 subcategory: ""
 description: |-
-  Manages an RWX vault.
+  Manages an RWX vault. Learn more about vaults https://www.rwx.com/docs/vaults.
 ---
 
 # rwx_vault (Resource)
 
-Manages an RWX vault.
+Manages an RWX vault. Learn more about [vaults](https://www.rwx.com/docs/vaults).
 
 ## Example Usage
 

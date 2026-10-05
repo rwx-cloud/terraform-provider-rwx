@@ -3,12 +3,12 @@
 page_title: "rwx_oidc_token Resource - rwx"
 subcategory: ""
 description: |-
-  Manages an OIDC token definition stored in an RWX vault.
+  Manages an OIDC token definition stored in an RWX vault. Learn more about OIDC tokens https://www.rwx.com/docs/oidc.
 ---
 
 # rwx_oidc_token (Resource)
 
-Manages an OIDC token definition stored in an RWX vault.
+Manages an OIDC token definition stored in an RWX vault. Learn more about [OIDC tokens](https://www.rwx.com/docs/oidc).
 
 ## Example Usage
 

@@ -47,7 +47,8 @@ func (r *OIDCTokenResource) Metadata(ctx context.Context, req resource.MetadataR
 
 func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages an OIDC token definition stored in an RWX vault.",
+		Description:         "Manages an OIDC token definition stored in an RWX vault.",
+		MarkdownDescription: "Manages an OIDC token definition stored in an RWX vault. Learn more about [OIDC tokens](https://www.rwx.com/docs/oidc).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of the OIDC token definition.",

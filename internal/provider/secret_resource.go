@@ -48,7 +48,8 @@ func (r *SecretResource) Metadata(ctx context.Context, req resource.MetadataRequ
 
 func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a secret stored in an RWX vault.",
+		Description:         "Manages a secret stored in an RWX vault.",
+		MarkdownDescription: "Manages a secret stored in an RWX vault. Learn more about [secrets](https://www.rwx.com/docs/secrets).",
 		Attributes: map[string]schema.Attribute{
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this secret."),
 			"vault_id": vaultIDAttribute(
