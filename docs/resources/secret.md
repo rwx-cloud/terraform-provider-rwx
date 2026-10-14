@@ -31,10 +31,36 @@ resource "rwx_secret" "example" {
 ### Required
 
 - `name` (String) The name of the secret itself.
-- `secret_value` (String, Sensitive) The secret value.
+- `secret_value` (String, Sensitive) The secret value. RWX cannot return this value during import. Set it in configuration; the first apply after import writes the configured value in place without deleting the secret, even if it matches the existing value. With an import block, this write occurs in the same apply as the import.
 
 ### Optional
 
 - `description` (String) An optional description of this secret.
 - `vault` (String) The name of a vault in RWX that should hold this secret.
 - `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults.
+
+## Import
+
+Import is supported using the following syntax:
+
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = rwx_secret.example
+  id = "default/my-secret"
+}
+
+import {
+  to = rwx_secret.example_by_id
+  id = "vault_id/00000000-0000-0000-0000-000000000000/my-secret"
+}
+```
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+terraform import rwx_secret.example default/my-secret
+
+terraform import rwx_secret.example vault_id/00000000-0000-0000-0000-000000000000/my-secret
+```
