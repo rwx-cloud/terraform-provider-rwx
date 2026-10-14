@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	tfpath "github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -20,9 +22,10 @@ import (
 
 // Ensure that the resource satisfies various framework interfaces.
 var (
-	_ resource.Resource               = &SecretResource{}
-	_ resource.ResourceWithConfigure  = &SecretResource{}
-	_ resource.ResourceWithModifyPlan = &SecretResource{}
+	_ resource.Resource                = &SecretResource{}
+	_ resource.ResourceWithConfigure   = &SecretResource{}
+	_ resource.ResourceWithModifyPlan  = &SecretResource{}
+	_ resource.ResourceWithImportState = &SecretResource{}
 )
 
 func NewSecretResource() resource.Resource {
@@ -70,7 +73,7 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"secret_value": schema.StringAttribute{
-				Description: "The secret value.",
+				Description: "The secret value. RWX cannot return this value during import. Set it in configuration; the first apply after import writes the configured value in place without deleting the secret, even if it matches the existing value. With an import block, this write occurs in the same apply as the import.",
 				Required:    true,
 				Sensitive:   true,
 				Validators: []validator.String{
@@ -339,6 +342,35 @@ func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		)
 		return
 	}
+}
+
+func (r *SecretResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	parts := strings.Split(req.ID, "/")
+	var selectorPath tfpath.Path
+	var selector string
+	var name string
+	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		selectorPath = tfpath.Root("vault")
+		selector = parts[0]
+		name = parts[1]
+	} else if len(parts) == 3 && parts[0] == "vault_id" && parts[1] != "" && parts[2] != "" {
+		selectorPath = tfpath.Root("vault_id")
+		selector = parts[1]
+		name = parts[2]
+	} else {
+		resp.Diagnostics.AddError(
+			"Invalid secret import ID",
+			"Use vault-name/secret-name or vault_id/vault-id/secret-name.",
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, selectorPath, selector)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, tfpath.Root("name"), name)...)
 }
 
 func (m SecretResourceModel) vaultSelector() vaultSelectorModel {
