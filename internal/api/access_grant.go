@@ -29,32 +29,46 @@ type AccessGrant struct {
 }
 
 func (c Client) ListAccessGrants(vaultID string) ([]AccessGrant, error) {
-	req, err := http.NewRequest(http.MethodGet, accessGrantsEndpoint(vaultID), nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
-	}
+	query := url.Values{"limit": {"100"}}
+	var grants []AccessGrant
+	for {
+		req, err := http.NewRequest(http.MethodGet, accessGrantsEndpoint(vaultID)+"?"+query.Encode(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
+		}
 
-	resp, err := c.RoundTrip(req)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
+		resp, err := c.RoundTrip(req)
+		if err != nil {
+			return nil, fmt.Errorf("HTTP request failed: %w", err)
+		}
+		if resp.StatusCode == http.StatusNotFound {
+			_ = resp.Body.Close()
+			return nil, ErrNotFound
+		}
+		if resp.StatusCode != http.StatusOK {
+			err := responseError(resp)
+			_ = resp.Body.Close()
+			return nil, err
+		}
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, ErrNotFound
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, responseError(resp)
-	}
+		var result struct {
+			AccessGrants []AccessGrant `json:"access_grants"`
+			Pagination   struct {
+				NextCursor *string `json:"next_cursor"`
+			} `json:"pagination"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("unable to decode JSON response: %w", err)
+		}
 
-	var result struct {
-		AccessGrants []AccessGrant `json:"access_grants"`
+		grants = append(grants, result.AccessGrants...)
+		if result.Pagination.NextCursor == nil {
+			return grants, nil
+		}
+		query.Set("cursor", *result.Pagination.NextCursor)
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("unable to decode JSON response: %w", err)
-	}
-
-	return result.AccessGrants, nil
 }
 
 func (c Client) CreateAccessGrant(vaultID string, principal AccessGrantPrincipal, expiresAt *string) (AccessGrant, error) {

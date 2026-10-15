@@ -9,7 +9,7 @@ import (
 
 func TestListAccessGrants(t *testing.T) {
 	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
-		if got, want := req.URL.String(), "/mint/api/vaults/vault-id/access_grants"; got != want {
+		if got, want := req.URL.String(), "/mint/api/vaults/vault-id/access_grants?limit=100"; got != want {
 			t.Fatalf("URL = %q, want %q", got, want)
 		}
 		return jsonResponse(http.StatusOK, `{"access_grants":[{"id":"user-grant","vault":{"id":"vault-id","name":"production"},"principal":{"type":"user","id":"user-id","email":"user@example.com"},"expires_at":"2026-12-01T15:00:00.123456Z"},{"id":"service-account-grant","vault":{"id":"vault-id","name":"production"},"principal":{"type":"service_account","id":"service-account-id","name":"release-bot"},"expires_at":null}]}`), nil
@@ -136,8 +136,10 @@ func TestFindAccessGrant(t *testing.T) {
 	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
 		requests++
 		switch req.URL.String() {
-		case "/mint/api/vaults":
-			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"first-vault","name":"first"},{"id":"second-vault","name":"second"}]}`), nil
+		case "/mint/api/vaults?limit=100":
+			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"first-vault","name":"first"}],"pagination":{"next_cursor":"page2"}}`), nil
+		case "/mint/api/vaults?cursor=page2&limit=100":
+			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"second-vault","name":"second"}],"pagination":{"next_cursor":null}}`), nil
 		case "/mint/api/vaults/first-vault/access_grants/grant-id":
 			return jsonResponse(http.StatusNotFound, ""), nil
 		case "/mint/api/vaults/second-vault/access_grants/grant-id":
@@ -152,7 +154,7 @@ func TestFindAccessGrant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if requests != 3 || grant.Vault.ID != "second-vault" {
+	if requests != 4 || grant.Vault.ID != "second-vault" {
 		t.Fatalf("requests = %d, grant = %#v", requests, grant)
 	}
 }

@@ -113,8 +113,10 @@ func TestFindOIDCToken(t *testing.T) {
 	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
 		requests++
 		switch req.URL.String() {
-		case "/mint/api/vaults":
-			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"first-vault","name":"first"},{"id":"second-vault","name":"second"}]}`), nil
+		case "/mint/api/vaults?limit=100":
+			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"first-vault","name":"first"}],"pagination":{"next_cursor":"page2"}}`), nil
+		case "/mint/api/vaults?cursor=page2&limit=100":
+			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"second-vault","name":"second"}],"pagination":{"next_cursor":null}}`), nil
 		case "/mint/api/vaults/first-vault/oidc_tokens/token-id":
 			return jsonResponse(http.StatusNotFound, `{}`), nil
 		case "/mint/api/vaults/second-vault/oidc_tokens/token-id":
@@ -129,8 +131,8 @@ func TestFindOIDCToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if requests != 3 {
-		t.Fatalf("requests = %d, want 3", requests)
+	if requests != 4 {
+		t.Fatalf("requests = %d, want 4", requests)
 	}
 	if token.Vault.ID != "second-vault" || token.ID != "token-id" {
 		t.Fatalf("unexpected token: %#v", token)
