@@ -120,6 +120,7 @@ func (p *RwxProvider) Configure(ctx context.Context, req provider.ConfigureReque
 func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewGroupRelationshipResource,
+		NewGroupResource,
 		NewOIDCTokenResource,
 		NewSecretResource,
 		NewServiceAccountResource,
@@ -133,7 +134,10 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 }
 
 func (p *RwxProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{NewServiceAccountDataSource}
+	return []func() datasource.DataSource{
+		NewGroupDataSource,
+		NewServiceAccountDataSource,
+	}
 }
 
 func New(version string) func() provider.Provider {
