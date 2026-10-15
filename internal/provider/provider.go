@@ -138,6 +138,7 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 
 func (p *RwxProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewDirectoryDataSource,
 		NewDirectoryGroupDataSource,
 		NewGroupDataSource,
 		NewServiceAccountDataSource,
