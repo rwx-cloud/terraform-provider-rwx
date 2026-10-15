@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -105,6 +106,15 @@ func TestAccessGrantResourceLifecycle(t *testing.T) {
 
 func TestAccessGrantResourceDoesNotAdoptExistingGrant(t *testing.T) {
 	backend := newAccessGrantBackend()
+	backend.grants["earlier-grant"] = api.AccessGrant{
+		ID:    "earlier-grant",
+		Vault: api.Vault{ID: "vault-id", Name: "test"},
+		Principal: api.AccessGrantPrincipal{
+			Type:  api.AccessGrantPrincipalTypeUser,
+			ID:    "other-user-id",
+			Email: "other@example.com",
+		},
+	}
 	backend.grants["existing-grant"] = api.AccessGrant{
 		ID:    "existing-grant",
 		Vault: api.Vault{ID: "vault-id", Name: "test"},
@@ -138,8 +148,8 @@ resource "rwx_vault_user_access_grant" "test" {
 		},
 	})
 
-	if got := backend.count(); got != 1 {
-		t.Fatalf("access grant count = %d, want existing grant only", got)
+	if got := backend.count(); got != 2 {
+		t.Fatalf("access grant count = %d, want two existing grants only", got)
 	}
 }
 
@@ -242,9 +252,20 @@ func (b *accessGrantBackend) RoundTrip(req *http.Request) (*http.Response, error
 		case http.MethodGet:
 			grants := make([]api.AccessGrant, 0, len(b.grants))
 			for _, grant := range b.grants {
-				grants = append(grants, grant)
+				if grant.ID > req.URL.Query().Get("cursor") {
+					grants = append(grants, grant)
+				}
 			}
-			return accessGrantJSONResponse(http.StatusOK, map[string]any{"access_grants": grants}), nil
+			sort.Slice(grants, func(i, j int) bool { return grants[i].ID < grants[j].ID })
+			var nextCursor *string
+			if len(grants) > 1 {
+				nextCursor = &grants[0].ID
+				grants = grants[:1]
+			}
+			return accessGrantJSONResponse(http.StatusOK, map[string]any{
+				"access_grants": grants,
+				"pagination":    map[string]any{"next_cursor": nextCursor, "limit": 1},
+			}), nil
 		case http.MethodPost:
 			return b.create(req)
 		}

@@ -75,29 +75,42 @@ func (c Client) DeleteVault(vaultID string) error {
 }
 
 func (c Client) ListVaults() ([]Vault, error) {
-	req, err := http.NewRequest(http.MethodGet, "/mint/api/vaults", nil)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
-	}
+	query := url.Values{"limit": {"100"}}
+	var vaults []Vault
+	for {
+		req, err := http.NewRequest(http.MethodGet, "/mint/api/vaults?"+query.Encode(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
+		}
 
-	resp, err := c.RoundTrip(req)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close() //nolint:errcheck
+		resp, err := c.RoundTrip(req)
+		if err != nil {
+			return nil, fmt.Errorf("HTTP request failed: %w", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			err := responseError(resp)
+			_ = resp.Body.Close()
+			return nil, err
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, responseError(resp)
-	}
+		var response struct {
+			Vaults     []Vault `json:"vaults"`
+			Pagination struct {
+				NextCursor *string `json:"next_cursor"`
+			} `json:"pagination"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("unable to decode JSON response: %w", err)
+		}
 
-	var response struct {
-		Vaults []Vault `json:"vaults"`
+		vaults = append(vaults, response.Vaults...)
+		if response.Pagination.NextCursor == nil {
+			return vaults, nil
+		}
+		query.Set("cursor", *response.Pagination.NextCursor)
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("unable to decode JSON response: %w", err)
-	}
-
-	return response.Vaults, nil
 }
 
 func (c Client) FindVaultByName(name string) (Vault, error) {
