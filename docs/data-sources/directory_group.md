@@ -3,12 +3,12 @@
 page_title: "rwx_directory_group Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an existing identity-provider group in an RWX directory. Configure directory_id and exactly one of name or id. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX id to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires org:access.
+  Looks up an existing identity-provider group in an RWX directory. Configure directory_id and exactly one of name or id; both selectors return their resolved values. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX id to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires org:access.
 ---
 
 # rwx_directory_group (Data Source)
 
-Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires `org:access`.
+Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`; both selectors return their resolved values. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires `org:access`.
 
 ## Example Usage
 
@@ -37,5 +37,5 @@ data "rwx_directory_group" "by_id" {
 
 ### Optional
 
-- `id` (String) The stable local RWX directory-group ID, not the external IdP ID. Specify either id or name.
-- `name` (String) The exact, case-sensitive group name within the directory. Specify either id or name. When looking up by ID, returns the current name.
+- `id` (String) The stable local RWX directory-group ID, not the external IdP ID. Configure either `id` or `name`.
+- `name` (String) The exact, case-sensitive group name within the directory. Configure either `id` or `name`. When looking up by ID, returns the current name.

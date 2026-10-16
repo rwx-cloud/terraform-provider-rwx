@@ -55,7 +55,7 @@ func (r *VaultApproverResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault for this approver."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault for this approver. Reference rwx_vault.<name>.id for managed vaults.",
+				"The stable ID of the RWX vault for this approver. Reference `rwx_vault.<name>.id` for managed vaults.",
 			),
 			"email": schema.StringAttribute{
 				Description: "The email address of the user who can approve vault access.",

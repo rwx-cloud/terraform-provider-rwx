@@ -34,16 +34,16 @@ func (p *RwxProvider) Metadata(ctx context.Context, req provider.MetadataRequest
 
 func (p *RwxProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The RWX provider enables Terraform to manage RWX vaults, access grants, secrets, variables, and OIDC tokens.",
+		MarkdownDescription: "The RWX provider enables Terraform to manage RWX vaults, access grants, secrets, variables, OIDC tokens, groups, service accounts, direct permissions, group relationships, and directory-group mappings.\n\nUse [groups](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/group) and [service accounts](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account) to manage identities and their access. For directory sync, connect a directory in the RWX UI, then use the [directory data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/directory) and [directory-group mappings](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/directory_group_mapping).",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Description: "The URI for RWX's API. Default: cloud.rwx.com. This attribute may also be provided via the RWX_HOST environment variable. It is usually only needed for testing or development of the Terraform provider itself.",
-				Optional:    true,
+				MarkdownDescription: "The URI for RWX's API. Default: `cloud.rwx.com`. This attribute may also be provided via the `RWX_HOST` environment variable. It is usually only needed for testing or development of the Terraform provider itself.",
+				Optional:            true,
 			},
 			"access_token": schema.StringAttribute{
-				Description: "The access token for RWX's API. This may also be provided via the RWX_ACCESS_TOKEN environment variable.",
-				Optional:    true,
-				Sensitive:   true,
+				MarkdownDescription: "The access token for RWX's API. This may also be provided via the `RWX_ACCESS_TOKEN` environment variable.",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}

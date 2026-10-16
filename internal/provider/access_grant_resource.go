@@ -89,7 +89,7 @@ func (r *accessGrantResource) Schema(ctx context.Context, req resource.SchemaReq
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault to grant access to."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault to grant access to. Reference rwx_vault.<name>.id for managed vaults.",
+				"The stable ID of the RWX vault to grant access to. Reference `rwx_vault.<name>.id` for managed vaults.",
 			),
 			principalName: schema.StringAttribute{
 				MarkdownDescription: principalDescription,

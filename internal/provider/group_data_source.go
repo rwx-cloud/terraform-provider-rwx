@@ -32,22 +32,22 @@ func (d *GroupDataSource) Metadata(ctx context.Context, req datasource.MetadataR
 
 func (d *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an RWX group by its stable ID or exact name. Specify exactly one of `id` and `name`. Missing or ambiguous matches fail during planning when the selector is known. Requires `org:access`.",
+		MarkdownDescription: "Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known. Requires `org:access`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The stable ID of the group. Specify either id or name.",
-				Optional:    true,
-				Computed:    true,
+				MarkdownDescription: "The stable ID of the group. Configure either `id` or `name`.",
+				Optional:            true,
+				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 					stringvalidator.ExactlyOneOf(path.MatchRoot("name")),
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "The exact, case-sensitive name of the group. Specify either id or name.",
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+				MarkdownDescription: "The exact, case-sensitive name of the group. Configure either `id` or `name`.",
+				Optional:            true,
+				Computed:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"description": schema.StringAttribute{
 				Description: "The description of the group.",

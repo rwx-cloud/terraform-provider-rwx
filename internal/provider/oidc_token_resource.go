@@ -56,7 +56,7 @@ func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault that holds the OIDC token definition."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults.",
+				"The stable ID of the RWX vault that holds the OIDC token definition. Reference `rwx_vault.<name>.id` for managed vaults.",
 			),
 			"name": schema.StringAttribute{
 				Description: "The name of the OIDC token definition. Renaming updates the definition in place.",

@@ -34,8 +34,8 @@ resource "rwx_oidc_token" "example" {
 
 ### Optional
 
-- `vault` (String) The name of the RWX vault that holds the OIDC token definition. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault` (String) The name of the RWX vault that holds the OIDC token definition. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 

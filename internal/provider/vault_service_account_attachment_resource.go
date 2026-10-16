@@ -56,7 +56,7 @@ func (r *VaultServiceAccountAttachmentResource) Schema(ctx context.Context, req 
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault for this service-account attachment."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault for this service-account attachment. Reference rwx_vault.<name>.id for managed vaults.",
+				"The stable ID of the RWX vault for this service-account attachment. Reference `rwx_vault.<name>.id` for managed vaults.",
 			),
 			"service_account": schema.StringAttribute{
 				MarkdownDescription: "The service account to attach. Use `rwx_service_account.<name>.name` for a managed account, or look up an existing account by display name with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.name` attribute.",

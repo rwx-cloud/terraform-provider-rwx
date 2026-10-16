@@ -3,12 +3,12 @@
 page_title: "rwx_service_account Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions. Requires org:access.
+  Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions. Requires org:access.
 ---
 
 # rwx_service_account (Data Source)
 
-Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions. Requires `org:access`.
+Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions. Requires `org:access`.
 
 ## Example Usage
 
@@ -27,9 +27,9 @@ data "rwx_service_account" "by_id" {
 
 ### Optional
 
-- `display_name` (String) The display name. Legacy duplicates cause an ambiguity error. Specify exactly one of id, name, or display_name.
-- `id` (String) The stable service-account ID. Specify exactly one of id, name, or display_name.
-- `name` (String) The immutable reference name (preferred selector). Specify exactly one of id, name, or display_name.
+- `display_name` (String) The display name. Legacy duplicates cause an ambiguity error. Configure exactly one of `id`, `name`, or `display_name`.
+- `id` (String) The stable service-account ID. Configure exactly one of `id`, `name`, or `display_name`.
+- `name` (String) The service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.
 
 ### Read-Only
 

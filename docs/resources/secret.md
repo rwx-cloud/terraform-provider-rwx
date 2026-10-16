@@ -36,8 +36,8 @@ resource "rwx_secret" "example" {
 ### Optional
 
 - `description` (String) An optional description of this secret.
-- `vault` (String) The name of a vault in RWX that should hold this secret. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault` (String) The name of a vault in RWX that should hold this secret. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ## Import
 

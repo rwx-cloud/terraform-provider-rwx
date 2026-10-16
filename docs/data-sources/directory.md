@@ -27,5 +27,5 @@ data "rwx_directory" "by_id" {
 
 ### Optional
 
-- `id` (String) The stable local RWX directory ID, not the external identity-provider ID. Specify exactly one of id or name.
-- `name` (String) The exact, case-sensitive directory name. Names must match a single directory; use id when names are ambiguous. Specify exactly one of id or name.
+- `id` (String) The stable local RWX directory ID, not the external identity-provider ID. Configure exactly one of `id` or `name`; both attributes return the resolved values.
+- `name` (String) The exact, case-sensitive directory name. Names must match a single directory; use `id` when names are ambiguous. Configure exactly one of `id` or `name`; both attributes return the resolved values.

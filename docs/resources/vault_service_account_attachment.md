@@ -36,8 +36,8 @@ resource "rwx_vault_service_account_attachment" "example" {
 
 ### Optional
 
-- `vault` (String) The name of the RWX vault for this service-account attachment. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault for this service-account attachment. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault` (String) The name of the RWX vault for this service-account attachment. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault for this service-account attachment. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 
