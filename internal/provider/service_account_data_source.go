@@ -32,7 +32,7 @@ func (d *ServiceAccountDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *ServiceAccountDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions.",
+		MarkdownDescription: "Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions. Requires `org:access`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable service-account ID. Specify exactly one of id, name, or display_name.",

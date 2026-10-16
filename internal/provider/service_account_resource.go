@@ -46,7 +46,7 @@ func (r *ServiceAccountResource) Metadata(ctx context.Context, req resource.Meta
 
 func (r *ServiceAccountResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages RWX service-account metadata without issuing credentials or managing permissions. Import by the stable service-account ID. Renaming the display name preserves identity and the immutable name. Destroy deactivates the account, revokes its tokens, and ends its group memberships.",
+		MarkdownDescription: "Manages RWX service-account metadata without issuing credentials or managing permissions. Import by the stable service-account ID. Renaming the display name preserves identity and the immutable name. Destroy deactivates the account, revokes its tokens, and ends its group memberships.\n\n## Required permissions\n\nThe provider's access token needs `org:access` to read service accounts, `service_account:create` to create them, and `service_account:manage` on the target account to update or deactivate it.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable service-account ID.",

@@ -4,11 +4,17 @@ page_title: "rwx_group Resource - rwx"
 subcategory: ""
 description: |-
   Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
+  Required permissions
+  The provider's access token needs org:access to read groups, group:create to create them, and group:manage on the target group to update or delete it.
 ---
 
 # rwx_group (Resource)
 
 Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
+
+## Required permissions
+
+The provider's access token needs `org:access` to read groups, `group:create` to create them, and `group:manage` on the target group to update or delete it.
 
 ## Example Usage
 

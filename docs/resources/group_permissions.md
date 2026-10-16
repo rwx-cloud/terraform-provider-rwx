@@ -4,11 +4,17 @@ page_title: "rwx_group_permissions Resource - rwx"
 subcategory: ""
 description: |-
   Manages the complete direct-permission set of an RWX group. Use only one resource per group. Apply replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set permissions = [] to clear direct assignments. Destroy clears direct permissions without deleting the group. Changing group_id replaces this resource and clears the old group's direct permissions. Planning validates known permission keys, scopes, and grantability using the RWX catalog; checks requiring unknown target or resource IDs are deferred until those IDs are known. RWX rechecks authority when applying and rejects unauthorized changes and changes to protected groups. Import by the group ID.
+  Required permissions
+  The provider's access token needs org:access to read direct permissions and the permission catalog, plus group:manage on the target group for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in permissions. See permissions https://www.rwx.com/docs/permissions.
 ---
 
 # rwx_group_permissions (Resource)
 
 Manages the complete direct-permission set of an RWX group. Use only one resource per group. Apply replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set `permissions = []` to clear direct assignments. Destroy clears direct permissions without deleting the group. Changing `group_id` replaces this resource and clears the old group's direct permissions. Planning validates known permission keys, scopes, and grantability using the RWX catalog; checks requiring unknown target or resource IDs are deferred until those IDs are known. RWX rechecks authority when applying and rejects unauthorized changes and changes to protected groups. Import by the group ID.
+
+## Required permissions
+
+The provider's access token needs `org:access` to read direct permissions and the permission catalog, plus `group:manage` on the target group for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in `permissions`. See [permissions](https://www.rwx.com/docs/permissions).
 
 ## Example Usage
 
@@ -42,11 +48,11 @@ resource "rwx_group_permissions" "deployers" {
 
 Required:
 
-- `key` (String) The unscoped permission key, such as `run:read` or `vault:manage`.
+- `key` (String) The permission key, such as `run:read` or `vault:manage`. For a scoped assignment, set `resource_id` separately. See [permissions](https://www.rwx.com/docs/permissions) for available keys and supported scopes.
 
 Optional:
 
-- `resource_id` (String) The resource ID for a scoped assignment. Omit for organization-wide access.
+- `resource_id` (String) The resource ID for a scoped assignment, such as a vault ID for `vault:manage`. Only keys that support resource scopes accept this attribute. Omit for organization-wide access.
 
 ## Import
 

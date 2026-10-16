@@ -3,12 +3,12 @@
 page_title: "rwx_service_account Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions.
+  Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions. Requires org:access.
 ---
 
 # rwx_service_account (Data Source)
 
-Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions.
+Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions. Requires `org:access`.
 
 ## Example Usage
 
