@@ -3,15 +3,33 @@
 page_title: "rwx_directory_group_mapping Resource - rwx"
 subcategory: ""
 description: |-
-  Maps one imported directory group to an RWX group. Connect and import the directory, review memberships, and activate directory sync in the UI; this resource does not manage activation or IdP rosters. Draft saves finish immediately. Enabled creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. Multiple directory groups may contribute to one target; removing or retargeting one source preserves the others. Learn more about directory sync https://www.rwx.com/docs/security/directory-sync.
-  Failed or timed-out saves retain acknowledged mapping state where possible. Run apply again to retry the desired target; failed creates may be marked tainted by Terraform and replaced. Failed destroys retain the source identity so another destroy can retry reconciliation. A superseded or unknown completion is an error, not success. The token needs org:access and group:manage on all affected targets, including former targets. Removal without retained target metadata requires unscoped group:manage. Import using the local directory-group ID, not its external IdP ID.
+  Maps one imported directory group to an RWX group. Multiple directory groups may contribute to one target; removing or retargeting one source preserves memberships contributed by the others. Import using the local directory-group ID, not its external IdP ID.
+  Setup
+  Connect and import the directory, review memberships, and activate directory sync in the UI. This resource does not manage activation or IdP rosters. See directory sync https://www.rwx.com/docs/security/directory-sync.
+  Reconciliation and retries
+  Draft saves finish immediately. Once sync is enabled, creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. reconciliation_timeout controls the wait per write and defaults to 20m.
+  If a save fails or times out, run terraform apply again to retry the desired target. Terraform may mark a failed create as tainted and replace it on the next apply. If a destroy fails or times out, run terraform destroy again. The provider reports an error unless RWX confirms reconciliation succeeded; check the error before retrying if another operation changed the mapping.
+  Required permissions
+  The provider's access token needs org:access and group:manage on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped group:manage.
 ---
 
 # rwx_directory_group_mapping (Resource)
 
-Maps one imported directory group to an RWX group. Connect and import the directory, review memberships, and activate directory sync in the UI; this resource does not manage activation or IdP rosters. Draft saves finish immediately. Enabled creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. Multiple directory groups may contribute to one target; removing or retargeting one source preserves the others. Learn more about [directory sync](https://www.rwx.com/docs/security/directory-sync).
+Maps one imported directory group to an RWX group. Multiple directory groups may contribute to one target; removing or retargeting one source preserves memberships contributed by the others. Import using the local directory-group ID, not its external IdP ID.
 
-Failed or timed-out saves retain acknowledged mapping state where possible. Run apply again to retry the desired target; failed creates may be marked tainted by Terraform and replaced. Failed destroys retain the source identity so another destroy can retry reconciliation. A superseded or unknown completion is an error, not success. The token needs `org:access` and `group:manage` on all affected targets, including former targets. Removal without retained target metadata requires unscoped `group:manage`. Import using the local directory-group ID, not its external IdP ID.
+## Setup
+
+Connect and import the directory, review memberships, and activate directory sync in the UI. This resource does not manage activation or IdP rosters. See [directory sync](https://www.rwx.com/docs/security/directory-sync).
+
+## Reconciliation and retries
+
+Draft saves finish immediately. Once sync is enabled, creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. `reconciliation_timeout` controls the wait per write and defaults to `20m`.
+
+If a save fails or times out, run `terraform apply` again to retry the desired target. Terraform may mark a failed create as tainted and replace it on the next apply. If a destroy fails or times out, run `terraform destroy` again. The provider reports an error unless RWX confirms reconciliation succeeded; check the error before retrying if another operation changed the mapping.
+
+## Required permissions
+
+The provider's access token needs `org:access` and `group:manage` on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped `group:manage`.
 
 ## Example Usage
 
