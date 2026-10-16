@@ -48,11 +48,6 @@ In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.
 ```terraform
 import {
   to = rwx_secret.example
-  id = "default/my-secret"
-}
-
-import {
-  to = rwx_secret.example_by_id
   id = "vault_id/00000000-0000-0000-0000-000000000000/my-secret"
 }
 ```
@@ -60,7 +55,8 @@ import {
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import rwx_secret.example default/my-secret
+# Choose either the vault-name or vault-ID form for an existing secret.
+terraform import rwx_secret.example example/my-secret
 
 terraform import rwx_secret.example vault_id/00000000-0000-0000-0000-000000000000/my-secret
 ```
