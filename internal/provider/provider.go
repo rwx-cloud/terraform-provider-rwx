@@ -122,6 +122,7 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewGroupRelationshipResource,
 		NewOIDCTokenResource,
 		NewSecretResource,
+		NewServiceAccountResource,
 		NewVariableResource,
 		NewVaultApproverResource,
 		NewVaultResource,
@@ -132,7 +133,7 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 }
 
 func (p *RwxProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{NewServiceAccountDataSource}
 }
 
 func New(version string) func() provider.Provider {
