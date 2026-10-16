@@ -119,6 +119,7 @@ func (p *RwxProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		NewDirectoryGroupMappingResource,
 		NewGroupRelationshipResource,
 		NewOIDCTokenResource,
 		NewSecretResource,
