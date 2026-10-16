@@ -42,10 +42,11 @@ resource "rwx_vault_approver" "example" {
 
 ## Import
 
-Import is supported using the following syntax:
-
-The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+Find the approver ID with [`rwx vaults approvers list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/approvers/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the user's email as the second part of the [`terraform import`](https://developer.hashicorp.com/terraform/cli/commands/import) ID:
 
 ```shell
+rwx vaults approvers list --vault 00000000-0000-0000-0000-000000000000
+
+# Replace the second UUID with the first-column ID from the row matching the user's email.
 terraform import rwx_vault_approver.example 00000000-0000-0000-0000-000000000000/11111111-1111-1111-1111-111111111111
 ```

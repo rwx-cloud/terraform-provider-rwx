@@ -43,10 +43,11 @@ resource "rwx_vault_service_account_attachment" "example" {
 
 ## Import
 
-Import is supported using the following syntax:
-
-The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+Find the attachment ID with [`rwx vaults service-accounts list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/service-accounts/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the service-account name as the second part of the [`terraform import`](https://developer.hashicorp.com/terraform/cli/commands/import) ID:
 
 ```shell
+rwx vaults service-accounts list --vault 00000000-0000-0000-0000-000000000000
+
+# Replace the second UUID with the first-column ID from the row matching the service-account name.
 terraform import rwx_vault_service_account_attachment.example 00000000-0000-0000-0000-000000000000/11111111-1111-1111-1111-111111111111
 ```
