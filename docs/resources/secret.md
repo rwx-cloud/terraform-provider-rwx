@@ -30,14 +30,14 @@ resource "rwx_secret" "example" {
 
 ### Required
 
-- `name` (String) The name of the secret itself.
+- `name` (String) The name of the secret. Changing this replaces the secret.
 - `secret_value` (String, Sensitive) The secret value. RWX cannot return this value during import. Set it in configuration; the first apply after import writes the configured value in place without deleting the secret, even if it matches the existing value. With an import block, this write occurs in the same apply as the import.
 
 ### Optional
 
 - `description` (String) An optional description of this secret.
-- `vault` (String) The name of a vault in RWX that should hold this secret.
-- `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults.
+- `vault` (String) The name of a vault in RWX that should hold this secret. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ## Import
 

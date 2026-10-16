@@ -59,7 +59,7 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				"The stable ID of the RWX vault that should hold this secret. Reference rwx_vault.<name>.id for managed vaults.",
 			),
 			"name": schema.StringAttribute{
-				Description: "The name of the secret itself.",
+				Description: "The name of the secret. Changing this replaces the secret.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

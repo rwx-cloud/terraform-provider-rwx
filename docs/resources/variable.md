@@ -29,13 +29,13 @@ resource "rwx_variable" "example" {
 
 ### Required
 
-- `name` (String) The name of the variable itself.
+- `name` (String) The name of the variable. Changing this replaces the variable.
 - `value` (String) The value of this variable.
 
 ### Optional
 
-- `vault` (String) The name of a vault in RWX that should hold this variable.
-- `vault_id` (String) The stable ID of the RWX vault that should hold this variable. Reference rwx_vault.<name>.id for managed vaults.
+- `vault` (String) The name of a vault in RWX that should hold this variable. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this variable. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ## Import
 

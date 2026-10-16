@@ -30,12 +30,12 @@ resource "rwx_oidc_token" "example" {
 ### Required
 
 - `audience` (String) The audience claim included in tokens issued from this definition.
-- `name` (String) The name of the OIDC token definition.
+- `name` (String) The name of the OIDC token definition. Renaming updates the definition in place.
 
 ### Optional
 
-- `vault` (String) The name of the RWX vault that holds the OIDC token definition.
-- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults.
+- `vault` (String) The name of the RWX vault that holds the OIDC token definition. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference rwx_vault.<name>.id for managed vaults. Specify exactly one of vault or vault_id. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 
