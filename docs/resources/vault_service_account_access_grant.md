@@ -17,9 +17,13 @@ resource "rwx_vault" "example" {
   name = "example"
 }
 
+data "rwx_service_account" "deploy" {
+  display_name = "Deploy automation"
+}
+
 resource "rwx_vault_service_account_access_grant" "example" {
   vault_id        = rwx_vault.example.id
-  service_account = "deploys"
+  service_account = data.rwx_service_account.deploy.name
 }
 ```
 
@@ -28,7 +32,7 @@ resource "rwx_vault_service_account_access_grant" "example" {
 
 ### Required
 
-- `service_account` (String) The name of the RWX service account that can access the vault.
+- `service_account` (String) The service account to grant access to. Use `rwx_service_account.<name>.name` for a managed account, or look up an existing account by display name with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.name` attribute.
 
 ### Optional
 

@@ -3,14 +3,14 @@
 page_title: "rwx_group Resource - rwx"
 subcategory: ""
 description: |-
-  Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
+  Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Use rwx_group_permissions https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/group_permissions for direct permissions and rwx_group_relationship https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/group_relationship for group inheritance. To reference an existing group without managing its metadata, use the rwx_group data source https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/group. Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
   Required permissions
   The provider's access token needs org:access to read groups, group:create to create them, and group:manage on the target group to update or delete it.
 ---
 
 # rwx_group (Resource)
 
-Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
+Manages RWX group metadata. Permissions, memberships, and relationships are managed separately and are not changed by importing or updating this resource. Use [rwx_group_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/group_permissions) for direct permissions and [rwx_group_relationship](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/group_relationship) for group inheritance. To reference an existing group without managing its metadata, use the [rwx_group data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/group). Renaming a group preserves its ID. RWX rejects deletion of protected groups, including system groups and groups whose deletion would remove required access.
 
 ## Required permissions
 
