@@ -19,45 +19,48 @@ import (
 )
 
 func TestSecretResource(t *testing.T) {
+	client := integrationClient(t)
+	vault := integrationVault(t)
+	t.Cleanup(func() {
+		if err := client.DeleteSecretInVault(api.VaultSelector{ID: vault.ID}, api.Secret{Name: "test-secret"}); err != nil {
+			t.Errorf("cleanup secret in vault %s: %v", vault.ID, err)
+		}
+	})
+	config := func(value, description string) string {
+		return providerConfig + fmt.Sprintf(`
+resource "rwx_secret" "test" {
+  vault = %q
+  name = "test-secret"
+  secret_value = %q
+  %s
+}
+`, vault.Name, value, description)
+	}
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config: providerConfig + `
-resource "rwx_secret" "test" {
-  vault        = "terraform_provider_testing"
-  name         = "test-secret"
-  secret_value = "foo"
-  description  = "a description"
-}
-`,
+				Config: config("foo", `description = "a description"`),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("rwx_secret.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "vault", vault.Name),
 					resource.TestCheckResourceAttr("rwx_secret.test", "name", "test-secret"),
 					resource.TestCheckResourceAttr("rwx_secret.test", "secret_value", "foo"),
 					resource.TestCheckResourceAttr("rwx_secret.test", "description", "a description"),
 				),
 			},
-			// Update and Read testing
 			{
-				Config: providerConfig + `
-resource "rwx_secret" "test" {
-  vault        = "terraform_provider_testing"
-  name         = "test-secret"
-  secret_value = "bar"
-}
-`,
+				Config: config("bar", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("rwx_secret.test", "vault", "terraform_provider_testing"),
+					resource.TestCheckResourceAttr("rwx_secret.test", "vault", vault.Name),
 					resource.TestCheckResourceAttr("rwx_secret.test", "name", "test-secret"),
 					resource.TestCheckResourceAttr("rwx_secret.test", "secret_value", "bar"),
 					resource.TestCheckNoResourceAttr("rwx_secret.test", "description"),
 				),
 			},
-			// Delete testing automatically occurs in TestCase
 		},
 	})
+	_, err := client.GetSecretMetadataInVault(api.VaultSelector{ID: vault.ID}, api.Secret{Name: "test-secret"})
+	integrationError(t, err, api.ErrNotFound)
 }
 
 func TestSecretResourceImport(t *testing.T) {
