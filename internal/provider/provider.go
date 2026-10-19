@@ -123,6 +123,7 @@ func (p *RwxProvider) Resources(ctx context.Context) []func() resource.Resource 
 		NewGroupPermissionsResource,
 		NewGroupRelationshipResource,
 		NewGroupResource,
+		NewGroupUserMembershipResource,
 		NewOIDCTokenResource,
 		NewSecretResource,
 		NewServiceAccountPermissionsResource,
