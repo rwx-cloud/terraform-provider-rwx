@@ -4,24 +4,21 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
-
-	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestVaultServiceAccountAttachmentResource(t *testing.T) {
+	client := integrationClient(t)
 	approverEmail := os.Getenv("RWX_TERRAFORM_TEST_APPROVER_EMAIL")
-	serviceAccount := os.Getenv("RWX_TERRAFORM_TEST_SERVICE_ACCOUNT")
-	if approverEmail == "" || serviceAccount == "" {
-		t.Skip("RWX_TERRAFORM_TEST_APPROVER_EMAIL and RWX_TERRAFORM_TEST_SERVICE_ACCOUNT are required")
+	if approverEmail == "" {
+		t.Fatal("RWX_TERRAFORM_TEST_APPROVER_EMAIL must name an existing user in rwx-integration-testing")
 	}
 
-	vaultName := fmt.Sprintf("terraform-provider-attachment-%d", time.Now().UnixNano())
-	config := vaultServiceAccountAttachmentConfig(vaultName, approverEmail, serviceAccount)
-	var vaultID string
+	account := integrationAccount(t, client)
+	vault := integrationVault(t)
+	config := vaultServiceAccountAttachmentConfig(vault.ID, approverEmail, account.Name)
 	var attachmentID string
 
 	resource.Test(t, resource.TestCase{
@@ -31,12 +28,11 @@ func TestVaultServiceAccountAttachmentResource(t *testing.T) {
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("rwx_vault_approver.test", "id"),
-					resource.TestCheckResourceAttr("rwx_vault_service_account_attachment.test", "service_account", serviceAccount),
+					resource.TestCheckResourceAttr("rwx_vault_service_account_attachment.test", "service_account", account.Name),
 					resource.TestCheckResourceAttrSet("rwx_vault_service_account_attachment.test", "id"),
-					resource.TestCheckResourceAttrSet("rwx_vault_service_account_attachment.test", "service_account_id"),
+					resource.TestCheckResourceAttr("rwx_vault_service_account_attachment.test", "service_account_id", account.ID),
 					resource.TestCheckResourceAttrSet("rwx_vault_service_account_attachment.test", "created_at"),
 					func(state *terraform.State) error {
-						vaultID = state.RootModule().Resources["rwx_vault.test"].Primary.Attributes["id"]
 						attachmentID = state.RootModule().Resources["rwx_vault_service_account_attachment.test"].Primary.Attributes["id"]
 						return nil
 					},
@@ -49,12 +45,12 @@ func TestVaultServiceAccountAttachmentResource(t *testing.T) {
 			{
 				ResourceName:      "rwx_vault_service_account_attachment.test",
 				ImportState:       true,
-				ImportStateIdFunc: func(*terraform.State) (string, error) { return vaultID + "/" + attachmentID, nil },
+				ImportStateIdFunc: func(*terraform.State) (string, error) { return vault.ID + "/" + attachmentID, nil },
 				ImportStateVerify: true,
 			},
 			{
 				PreConfig: func() {
-					if err := vaultServiceAccountAttachmentTestClient(t).DeleteVaultServiceAccountAttachment(vaultID, attachmentID); err != nil {
+					if err := client.DeleteVaultServiceAccountAttachment(vault.ID, attachmentID); err != nil {
 						t.Fatal(err)
 					}
 				},
@@ -72,39 +68,16 @@ func TestVaultServiceAccountAttachmentResource(t *testing.T) {
 	})
 }
 
-func vaultServiceAccountAttachmentConfig(vaultName string, approverEmail string, serviceAccount string) string {
+func vaultServiceAccountAttachmentConfig(vaultID string, approverEmail string, serviceAccount string) string {
 	return providerConfig + fmt.Sprintf(`
-resource "rwx_vault" "test" {
-  name = %q
-}
-
 resource "rwx_vault_approver" "test" {
-  vault_id = rwx_vault.test.id
+  vault_id = %q
   email    = %q
 }
 
 resource "rwx_vault_service_account_attachment" "test" {
-  vault_id        = rwx_vault.test.id
+  vault_id        = %q
   service_account = %q
 }
-`, vaultName, approverEmail, serviceAccount)
-}
-
-func vaultServiceAccountAttachmentTestClient(t *testing.T) api.Client {
-	t.Helper()
-
-	host := os.Getenv("RWX_HOST")
-	if host == "" {
-		host = "cloud.rwx.com"
-	}
-	client, err := api.NewClient(api.Config{
-		Host:        host,
-		AccessToken: os.Getenv("RWX_ACCESS_TOKEN"),
-		Version:     "test",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return client
+`, vaultID, approverEmail, vaultID, serviceAccount)
 }

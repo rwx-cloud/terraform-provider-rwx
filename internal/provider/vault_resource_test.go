@@ -12,6 +12,7 @@ import (
 )
 
 func TestVaultResource(t *testing.T) {
+	integrationClient(t)
 	name := fmt.Sprintf("terraform-provider-%d", time.Now().UnixNano())
 	updatedName := name + "-updated"
 	var vaultID string
@@ -117,6 +118,7 @@ func TestVaultResource(t *testing.T) {
 }
 
 func TestVaultResourceDependenciesAndSelectorMigration(t *testing.T) {
+	integrationClient(t)
 	name := fmt.Sprintf("terraform-provider-dependencies-%d", time.Now().UnixNano())
 	secretName := "test-secret"
 	var vaultID string
@@ -245,5 +247,5 @@ func checkSecretVersion(t *testing.T, vaultID *string, secretName string, want *
 func vaultTestClient(t *testing.T) api.Client {
 	t.Helper()
 
-	return oidcTokenTestClient(t)
+	return integrationClient(t)
 }

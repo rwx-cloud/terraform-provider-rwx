@@ -4,23 +4,20 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
-
-	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestVaultApproverResource(t *testing.T) {
+	client := integrationClient(t)
 	approverEmail := os.Getenv("RWX_TERRAFORM_TEST_APPROVER_EMAIL")
 	if approverEmail == "" {
-		t.Skip("RWX_TERRAFORM_TEST_APPROVER_EMAIL is required")
+		t.Fatal("RWX_TERRAFORM_TEST_APPROVER_EMAIL must name an existing user in rwx-integration-testing")
 	}
 
-	vaultName := fmt.Sprintf("terraform-provider-approver-%d", time.Now().UnixNano())
-	config := vaultApproverConfig(vaultName, approverEmail)
-	var vaultID string
+	vault := integrationVault(t)
+	config := vaultApproverConfig(vault.ID, approverEmail)
 	var approverID string
 
 	resource.Test(t, resource.TestCase{
@@ -33,7 +30,6 @@ func TestVaultApproverResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("rwx_vault_approver.test", "id"),
 					resource.TestCheckResourceAttrSet("rwx_vault_approver.test", "user_id"),
 					func(state *terraform.State) error {
-						vaultID = state.RootModule().Resources["rwx_vault.test"].Primary.Attributes["id"]
 						approverID = state.RootModule().Resources["rwx_vault_approver.test"].Primary.Attributes["id"]
 						return nil
 					},
@@ -46,12 +42,12 @@ func TestVaultApproverResource(t *testing.T) {
 			{
 				ResourceName:      "rwx_vault_approver.test",
 				ImportState:       true,
-				ImportStateIdFunc: func(*terraform.State) (string, error) { return vaultID + "/" + approverID, nil },
+				ImportStateIdFunc: func(*terraform.State) (string, error) { return vault.ID + "/" + approverID, nil },
 				ImportStateVerify: true,
 			},
 			{
 				PreConfig: func() {
-					if err := vaultApproverTestClient(t).DeleteVaultApprover(vaultID, approverID); err != nil {
+					if err := client.DeleteVaultApprover(vault.ID, approverID); err != nil {
 						t.Fatal(err)
 					}
 				},
@@ -66,34 +62,11 @@ func TestVaultApproverResource(t *testing.T) {
 	})
 }
 
-func vaultApproverConfig(vaultName string, approverEmail string) string {
+func vaultApproverConfig(vaultID string, approverEmail string) string {
 	return providerConfig + fmt.Sprintf(`
-resource "rwx_vault" "test" {
-  name = %q
-}
-
 resource "rwx_vault_approver" "test" {
-  vault_id = rwx_vault.test.id
+  vault_id = %q
   email    = %q
 }
-`, vaultName, approverEmail)
-}
-
-func vaultApproverTestClient(t *testing.T) api.Client {
-	t.Helper()
-
-	host := os.Getenv("RWX_HOST")
-	if host == "" {
-		host = "cloud.rwx.com"
-	}
-	client, err := api.NewClient(api.Config{
-		Host:        host,
-		AccessToken: os.Getenv("RWX_ACCESS_TOKEN"),
-		Version:     "test",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return client
+`, vaultID, approverEmail)
 }

@@ -93,9 +93,16 @@ tasks:
   - key: test
     use: [go-modules, terraform]
     run: go test -v ./...
+
+  - key: integration-test
+    use: [go-modules, terraform]
+    cache: false
+    timeout: 30m
+    run: go test -count=1 -v ./...
     env:
       TF_ACC: 1
-      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
+      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.rwx-integration-testing-access-token }}
+      RWX_TERRAFORM_TEST_APPROVER_EMAIL: jason@rwx.com
 
   - key: release-dry-run
     use: [go-modules, goreleaser]
@@ -126,4 +133,4 @@ tasks:
       # dev_overrides makes Terraform skip `init` and use the local binary.
       terraform plan
     env:
-      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.RWX_ACCESS_TOKEN }}
+      RWX_ACCESS_TOKEN: plugin-verification-no-api-requests
