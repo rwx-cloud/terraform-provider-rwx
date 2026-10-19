@@ -28,14 +28,14 @@ func permissionsAttribute() schema.SetNestedAttribute {
 		Required:    true,
 		NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
 			"key": schema.StringAttribute{
-				MarkdownDescription: "The unscoped permission key, such as `run:read` or `vault:manage`.",
+				MarkdownDescription: "The permission key, such as `run:read` or `vault:manage`. For a scoped assignment, set `resource_id` separately. See [permissions](https://www.rwx.com/docs/permissions) for available keys and supported scopes.",
 				Required:            true,
 				Validators:          []validator.String{stringvalidator.RegexMatches(regexp.MustCompile(`\S`), "must not be blank")},
 			},
 			"resource_id": schema.StringAttribute{
-				Description: "The resource ID for a scoped assignment. Omit for organization-wide access.",
-				Optional:    true,
-				Validators:  []validator.String{stringvalidator.RegexMatches(regexp.MustCompile(`\S`), "must not be blank")},
+				MarkdownDescription: "The resource ID for a scoped assignment, such as a vault ID for `vault:manage`. Only keys that support resource scopes accept this attribute. Omit for organization-wide access.",
+				Optional:            true,
+				Validators:          []validator.String{stringvalidator.RegexMatches(regexp.MustCompile(`\S`), "must not be blank")},
 			},
 		}},
 	}

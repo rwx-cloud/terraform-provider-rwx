@@ -5,6 +5,8 @@ subcategory: ""
 description: |-
   Manages the complete direct-permission set of an RWX service account, separately from its metadata and credentials. Inherited group access is unchanged. Changes made outside Terraform are restored on apply. Destroy clears direct permissions without deactivating the account. Manage each account's direct permissions with only one resource. Import by service-account ID.
   Known keys, scopes, and acting-token authority are checked against the permission catalog during planning. Checks requiring unknown same-plan IDs are deferred. RWX rechecks authority on apply and rejects an invalid replacement without partial writes.
+  Required permissions
+  The provider's access token needs org:access to read direct permissions and the permission catalog, plus service_account:manage on the target account for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in permissions. See permissions https://www.rwx.com/docs/permissions.
 ---
 
 # rwx_service_account_permissions (Resource)
@@ -13,17 +15,40 @@ Manages the complete direct-permission set of an RWX service account, separately
 
 Known keys, scopes, and acting-token authority are checked against the permission catalog during planning. Checks requiring unknown same-plan IDs are deferred. RWX rechecks authority on apply and rejects an invalid replacement without partial writes.
 
+## Required permissions
+
+The provider's access token needs `org:access` to read direct permissions and the permission catalog, plus `service_account:manage` on the target account for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in `permissions`. See [permissions](https://www.rwx.com/docs/permissions).
+
 ## Example Usage
 
 ```terraform
+resource "rwx_service_account" "automation" {
+  display_name = "Deploy automation"
+}
+
+resource "rwx_vault" "deployments" {
+  name = "deployments"
+}
+
 resource "rwx_service_account_permissions" "automation" {
-  service_account_id = "00000000-0000-0000-0000-000000000001"
+  service_account_id = rwx_service_account.automation.id
   permissions = [
     { key = "run:read" },
     {
       key         = "vault:manage"
-      resource_id = "00000000-0000-0000-0000-000000000002"
+      resource_id = rwx_vault.deployments.id
     },
+  ]
+}
+
+data "rwx_service_account" "reporting" {
+  display_name = "Reporting"
+}
+
+resource "rwx_service_account_permissions" "reporting" {
+  service_account_id = data.rwx_service_account.reporting.id
+  permissions = [
+    { key = "run:read" },
   ]
 }
 ```
@@ -45,11 +70,11 @@ resource "rwx_service_account_permissions" "automation" {
 
 Required:
 
-- `key` (String) The unscoped permission key, such as `run:read` or `vault:manage`.
+- `key` (String) The permission key, such as `run:read` or `vault:manage`. For a scoped assignment, set `resource_id` separately. See [permissions](https://www.rwx.com/docs/permissions) for available keys and supported scopes.
 
 Optional:
 
-- `resource_id` (String) The resource ID for a scoped assignment. Omit for organization-wide access.
+- `resource_id` (String) The resource ID for a scoped assignment, such as a vault ID for `vault:manage`. Only keys that support resource scopes accept this attribute. Omit for organization-wide access.
 
 ## Import
 

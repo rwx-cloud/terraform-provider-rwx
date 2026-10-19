@@ -22,8 +22,8 @@ type vaultSelectorModel struct {
 
 func vaultNameAttribute(description string) schema.StringAttribute {
 	return schema.StringAttribute{
-		Description: description,
-		Optional:    true,
+		MarkdownDescription: description + " Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.",
+		Optional:            true,
 		Validators: []validator.String{
 			stringvalidator.LengthAtLeast(1),
 			stringvalidator.RegexMatches(
@@ -36,8 +36,8 @@ func vaultNameAttribute(description string) schema.StringAttribute {
 
 func vaultIDAttribute(description string) schema.StringAttribute {
 	return schema.StringAttribute{
-		Description: description,
-		Optional:    true,
+		MarkdownDescription: description + " Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.",
+		Optional:            true,
 		Validators: []validator.String{
 			stringvalidator.LengthAtLeast(1),
 			stringvalidator.ExactlyOneOf(path.MatchRoot("vault")),

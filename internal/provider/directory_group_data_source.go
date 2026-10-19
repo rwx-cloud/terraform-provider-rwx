@@ -39,7 +39,7 @@ func (d *DirectoryGroupDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *DirectoryGroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement.",
+		MarkdownDescription: "Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`; both selectors return their resolved values. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires `org:access`.",
 		Attributes: map[string]schema.Attribute{
 			"directory_id": schema.StringAttribute{
 				Description: "The local RWX directory ID. The directory must belong to the authenticated organization.",
@@ -47,16 +47,16 @@ func (d *DirectoryGroupDataSource) Schema(ctx context.Context, req datasource.Sc
 				Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"id": schema.StringAttribute{
-				Description: "The stable local RWX directory-group ID, not the external IdP ID. Specify either id or name.",
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.LengthAtLeast(1), stringvalidator.ExactlyOneOf(path.MatchRoot("name"))},
+				MarkdownDescription: "The stable local RWX directory-group ID, not the external IdP ID. Configure either `id` or `name`.",
+				Optional:            true,
+				Computed:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1), stringvalidator.ExactlyOneOf(path.MatchRoot("name"))},
 			},
 			"name": schema.StringAttribute{
-				Description: "The exact, case-sensitive group name within the directory. Specify either id or name. When looking up by ID, returns the current name.",
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+				MarkdownDescription: "The exact, case-sensitive group name within the directory. Configure either `id` or `name`. When looking up by ID, returns the current name.",
+				Optional:            true,
+				Computed:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 		},
 	}

@@ -17,9 +17,13 @@ resource "rwx_vault" "example" {
   name = "example"
 }
 
+data "rwx_service_account" "deploy" {
+  display_name = "Deploy automation"
+}
+
 resource "rwx_vault_service_account_access_grant" "example" {
   vault_id        = rwx_vault.example.id
-  service_account = "deploys"
+  service_account = data.rwx_service_account.deploy.name
 }
 ```
 
@@ -28,13 +32,13 @@ resource "rwx_vault_service_account_access_grant" "example" {
 
 ### Required
 
-- `service_account` (String) The name of the RWX service account that can access the vault.
+- `service_account` (String) The service account to grant access to. Use `rwx_service_account.<name>.name` for a managed account, or look up an existing account by display name with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.name` attribute.
 
 ### Optional
 
 - `expires_at` (String) The optional ISO 8601 timestamp when access expires. Omit this attribute for permanent access.
-- `vault` (String) The name of the RWX vault to grant access to.
-- `vault_id` (String) The stable ID of the RWX vault to grant access to. Reference rwx_vault.<name>.id for managed vaults.
+- `vault` (String) The name of the RWX vault to grant access to. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault to grant access to. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 

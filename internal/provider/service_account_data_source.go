@@ -32,28 +32,28 @@ func (d *ServiceAccountDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *ServiceAccountDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up one active RWX service account by exactly one of ID, immutable name, or display name. Prefer immutable name over display name. Missing or ambiguous matches fail during planning when inputs are known. Does not expose credentials or permissions.",
+		MarkdownDescription: "Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions. Requires `org:access`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "The stable service-account ID. Specify exactly one of id, name, or display_name.",
-				Optional:    true,
-				Computed:    true,
+				MarkdownDescription: "The stable service-account ID. Configure exactly one of `id`, `name`, or `display_name`.",
+				Optional:            true,
+				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
 					stringvalidator.ExactlyOneOf(path.MatchRoot("name"), path.MatchRoot("display_name")),
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "The immutable reference name (preferred selector). Specify exactly one of id, name, or display_name.",
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+				MarkdownDescription: "The service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.",
+				Optional:            true,
+				Computed:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"display_name": schema.StringAttribute{
-				Description: "The display name. Legacy duplicates cause an ambiguity error. Specify exactly one of id, name, or display_name.",
-				Optional:    true,
-				Computed:    true,
-				Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+				MarkdownDescription: "The display name. Legacy duplicates cause an ambiguity error. Configure exactly one of `id`, `name`, or `display_name`.",
+				Optional:            true,
+				Computed:            true,
+				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"identity_id": schema.StringAttribute{
 				Description: "The stable identity ID.",

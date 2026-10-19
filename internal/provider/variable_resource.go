@@ -54,10 +54,10 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 		Attributes: map[string]schema.Attribute{
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this variable."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault that should hold this variable. Reference rwx_vault.<name>.id for managed vaults.",
+				"The stable ID of the RWX vault that should hold this variable. Reference `rwx_vault.<name>.id` for managed vaults.",
 			),
 			"name": schema.StringAttribute{
-				Description: "The name of the variable itself.",
+				Description: "The name of the variable. Changing this replaces the variable.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

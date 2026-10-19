@@ -1,10 +1,6 @@
 # Terraform RWX Provider
 
-The [RWX Provider](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs) enables [Terraform](https://terraform.io) to manage [RWX](https://www.rwx.com) vaults, secrets, variables, and OIDC tokens.
-
-> **Migrating from `rwx-research/mint`?** This provider is the successor to the
-> [`terraform-provider-mint`](https://registry.terraform.io/providers/rwx-research/mint) provider.
-> See the [migration guide](docs/guides/migrating-from-mint.md) for how to move existing state over.
+The [RWX Provider](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs) enables [Terraform](https://terraform.io) to manage [RWX](https://www.rwx.com) vaults, access grants, secrets, variables, OIDC tokens, groups, service accounts, direct permissions, group relationships, and directory-group mappings.
 
 ## Requirements
 

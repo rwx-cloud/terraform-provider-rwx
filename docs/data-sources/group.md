@@ -3,12 +3,12 @@
 page_title: "rwx_group Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an RWX group by its stable ID or exact name. Specify exactly one of id and name. Missing or ambiguous matches fail during planning when the selector is known.
+  Looks up an RWX group by its stable ID or exact name. Configure exactly one of id or name; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known. Requires org:access.
 ---
 
 # rwx_group (Data Source)
 
-Looks up an RWX group by its stable ID or exact name. Specify exactly one of `id` and `name`. Missing or ambiguous matches fail during planning when the selector is known.
+Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known. Requires `org:access`.
 
 ## Example Usage
 
@@ -27,8 +27,8 @@ data "rwx_group" "by_id" {
 
 ### Optional
 
-- `id` (String) The stable ID of the group. Specify either id or name.
-- `name` (String) The exact, case-sensitive name of the group. Specify either id or name.
+- `id` (String) The stable ID of the group. Configure either `id` or `name`.
+- `name` (String) The exact, case-sensitive name of the group. Configure either `id` or `name`.
 
 ### Read-Only
 

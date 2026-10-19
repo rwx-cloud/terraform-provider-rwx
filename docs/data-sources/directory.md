@@ -3,12 +3,12 @@
 page_title: "rwx_directory Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. Requires org:access. Directory rosters and mappings are not managed by this data source.
+  Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. Requires org:access. Directory rosters and mappings are not managed by this data source. Pass its id to the rwx_directory_group data source https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/directory_group, then use rwx_directory_group_mapping https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/directory_group_mapping to map that directory group to an RWX group.
 ---
 
 # rwx_directory (Data Source)
 
-Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. Requires `org:access`. Directory rosters and mappings are not managed by this data source.
+Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. Requires `org:access`. Directory rosters and mappings are not managed by this data source. Pass its `id` to the [rwx_directory_group data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/directory_group), then use [rwx_directory_group_mapping](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/directory_group_mapping) to map that directory group to an RWX group.
 
 ## Example Usage
 
@@ -27,5 +27,5 @@ data "rwx_directory" "by_id" {
 
 ### Optional
 
-- `id` (String) The stable local RWX directory ID, not the external identity-provider ID. Specify exactly one of id or name.
-- `name` (String) The exact, case-sensitive directory name. Names must match a single directory; use id when names are ambiguous. Specify exactly one of id or name.
+- `id` (String) The stable local RWX directory ID, not the external identity-provider ID. Configure exactly one of `id` or `name`; both attributes return the resolved values.
+- `name` (String) The exact, case-sensitive directory name. Names must match a single directory; use `id` when names are ambiguous. Configure exactly one of `id` or `name`; both attributes return the resolved values.

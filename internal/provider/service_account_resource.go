@@ -46,7 +46,7 @@ func (r *ServiceAccountResource) Metadata(ctx context.Context, req resource.Meta
 
 func (r *ServiceAccountResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages RWX service-account metadata without issuing credentials or managing permissions. Import by the stable service-account ID. Renaming the display name preserves identity and the immutable name. Destroy deactivates the account, revokes its tokens, and ends its group memberships.",
+		MarkdownDescription: "Manages RWX service-account metadata without issuing credentials or managing permissions. Use [rwx_service_account_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions) for direct permissions, [rwx_vault_service_account_attachment](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment) for task-scoped token access, or [rwx_vault_service_account_access_grant](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant) for vault access. To reference an existing account by display name or ID, use the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account). Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.\n\n## Required permissions\n\nThe provider's access token needs `org:access` to read service accounts, `service_account:create` to create them, and `service_account:manage` on the target account to update or deactivate it.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable service-account ID.",
@@ -63,7 +63,7 @@ func (r *ServiceAccountResource) Schema(ctx context.Context, req resource.Schema
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "The server-generated immutable reference name.",
+				Description: "The service-account name returned by RWX for use in vault resources and run definitions.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

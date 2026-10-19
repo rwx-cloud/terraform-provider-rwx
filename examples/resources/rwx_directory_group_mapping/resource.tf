@@ -1,3 +1,4 @@
+# Choose either the direct-ID resource or the by-name resource for a given directory group.
 resource "rwx_directory_group_mapping" "engineering" {
   directory_id       = "00000000-0000-0000-0000-000000000001"
   directory_group_id = "00000000-0000-0000-0000-000000000002"
