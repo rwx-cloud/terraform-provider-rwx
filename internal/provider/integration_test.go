@@ -69,6 +69,20 @@ func integrationVault(t *testing.T) api.Vault {
 	return vault
 }
 
+func integrationGroup(t *testing.T, client api.Client) api.Group {
+	t.Helper()
+	group, err := client.CreateGroup(api.Group{Name: integrationName()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := client.DeleteGroup(group.ID); err != nil && !errors.Is(err, api.ErrNotFound) {
+			t.Errorf("cleanup group %s: %v", group.ID, err)
+		}
+	})
+	return group
+}
+
 func integrationAccount(t *testing.T, client api.Client) api.ServiceAccount {
 	t.Helper()
 	account, err := client.CreateServiceAccount(api.ServiceAccount{DisplayName: integrationName()})
