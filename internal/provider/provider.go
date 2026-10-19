@@ -142,6 +142,7 @@ func (p *RwxProvider) DataSources(ctx context.Context) []func() datasource.DataS
 		NewDirectoryGroupDataSource,
 		NewGroupDataSource,
 		NewServiceAccountDataSource,
+		NewUserDataSource,
 	}
 }
 
