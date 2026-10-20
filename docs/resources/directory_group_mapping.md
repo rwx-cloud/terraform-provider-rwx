@@ -10,7 +10,7 @@ description: |-
   Draft saves finish immediately. Once sync is enabled, creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. reconciliation_timeout controls the wait per write and defaults to 20m.
   If a save fails or times out, run terraform apply again to retry the desired target. Terraform may mark a failed create as tainted and replace it on the next apply. If a destroy fails or times out, run terraform destroy again. The provider reports an error unless RWX confirms reconciliation succeeded; check the error before retrying if another operation changed the mapping.
   Required permissions
-  The provider's access token needs org:access and group:manage on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped group:manage.
+  The provider's access token needs group:manage on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped group:manage.
 ---
 
 # rwx_directory_group_mapping (Resource)
@@ -29,7 +29,7 @@ If a save fails or times out, run `terraform apply` again to retry the desired t
 
 ## Required permissions
 
-The provider's access token needs `org:access` and `group:manage` on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped `group:manage`.
+The provider's access token needs `group:manage` on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped `group:manage`.
 
 ## Example Usage
 

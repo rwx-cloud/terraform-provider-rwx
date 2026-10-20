@@ -3,12 +3,12 @@
 page_title: "rwx_group_relationship Resource - rwx"
 subcategory: ""
 description: |-
-  Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires org:access to read and group:manage on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.
+  Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires group:manage on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.
 ---
 
 # rwx_group_relationship (Resource)
 
-Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires `org:access` to read and `group:manage` on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.
+Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires `group:manage` on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.
 
 ## Example Usage
 

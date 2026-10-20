@@ -39,7 +39,7 @@ func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRe
 
 func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an existing active user in the authenticated organization by email or stable RWX user ID. Requires `org:access` with a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.",
+		MarkdownDescription: "Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "The stable RWX user ID, not the identity ID. Configure exactly one of `id` or `email`.",

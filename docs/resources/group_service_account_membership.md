@@ -3,12 +3,12 @@
 page_title: "rwx_group_service_account_membership Resource - rwx"
 subcategory: ""
 description: |-
-  Manages one direct service-account membership in a group. The service account inherits the group's permissions. See the docs https://www.rwx.com/docs/service-accounts#permissions for more information on how service accounts and groups work together. Requires org:access to read and group:manage on the group to add or remove membership; service_account:manage is not required. Server authorization and safety checks apply.
+  Manages one direct service-account membership in a group. The service account inherits the group's permissions. See the docs https://www.rwx.com/docs/service-accounts#permissions for more information on how service accounts and groups work together. Requires group:manage on the group to add or remove membership; service_account:manage is not required. Server authorization and safety checks apply.
 ---
 
 # rwx_group_service_account_membership (Resource)
 
-Manages one direct service-account membership in a group. The service account inherits the group's permissions. See [the docs](https://www.rwx.com/docs/service-accounts#permissions) for more information on how service accounts and groups work together. Requires `org:access` to read and `group:manage` on the group to add or remove membership; `service_account:manage` is not required. Server authorization and safety checks apply.
+Manages one direct service-account membership in a group. The service account inherits the group's permissions. See [the docs](https://www.rwx.com/docs/service-accounts#permissions) for more information on how service accounts and groups work together. Requires `group:manage` on the group to add or remove membership; `service_account:manage` is not required. Server authorization and safety checks apply.
 
 ## Example Usage
 

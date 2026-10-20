@@ -43,7 +43,7 @@ func (r *GroupServiceAccountMembershipResource) Metadata(ctx context.Context, re
 
 func (r *GroupServiceAccountMembershipResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages one direct service-account membership in a group. The service account inherits the group's permissions. See [the docs](https://www.rwx.com/docs/service-accounts#permissions) for more information on how service accounts and groups work together. Requires `org:access` to read and `group:manage` on the group to add or remove membership; `service_account:manage` is not required. Server authorization and safety checks apply.",
+		MarkdownDescription: "Manages one direct service-account membership in a group. The service account inherits the group's permissions. See [the docs](https://www.rwx.com/docs/service-accounts#permissions) for more information on how service accounts and groups work together. Requires `group:manage` on the group to add or remove membership; `service_account:manage` is not required. Server authorization and safety checks apply.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The membership identity, in group-id/service-account-id format.",
