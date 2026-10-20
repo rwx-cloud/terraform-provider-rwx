@@ -32,7 +32,7 @@ func (d *ServiceAccountDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *ServiceAccountDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions.",
+		MarkdownDescription: "Looks up one active RWX service account by immutable name, display name, or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the immutable name or ID if multiple accounts match a display name. Does not expose credentials or permissions.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "The stable service-account ID. Configure exactly one of `id`, `name`, or `display_name`.",
@@ -44,7 +44,7 @@ func (d *ServiceAccountDataSource) Schema(ctx context.Context, req datasource.Sc
 				},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "The service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.",
+				MarkdownDescription: "The immutable service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.",
 				Optional:            true,
 				Computed:            true,
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},

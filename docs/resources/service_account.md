@@ -3,14 +3,14 @@
 page_title: "rwx_service_account Resource - rwx"
 subcategory: ""
 description: |-
-  Manages RWX service-account metadata without issuing credentials https://www.rwx.com/docs/service-accounts#access-tokens or managing permissions. Use rwx_service_account_permissions https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions for direct permissions, rwx_vault_service_account_attachment https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment for task-scoped token access, or rwx_vault_service_account_access_grant https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant for vault access. To reference an existing account by display name or ID, use the rwx_service_account data source https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account. Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.
+  Manages RWX service-account metadata without issuing credentials https://www.rwx.com/docs/service-accounts#access-tokens or managing permissions. Use rwx_service_account_permissions https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions for direct permissions, rwx_vault_service_account_attachment https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment for task-scoped token access, or rwx_vault_service_account_access_grant https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant for vault access. To reference an existing account by immutable name, display name, or ID, use the rwx_service_account data source https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account. Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.
   Required permissions
   The provider's access token needs service_account:create to create service accounts and service_account:manage on the target account to update or deactivate it.
 ---
 
 # rwx_service_account (Resource)
 
-Manages RWX service-account metadata without [issuing credentials](https://www.rwx.com/docs/service-accounts#access-tokens) or managing permissions. Use [rwx_service_account_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions) for direct permissions, [rwx_vault_service_account_attachment](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment) for task-scoped token access, or [rwx_vault_service_account_access_grant](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant) for vault access. To reference an existing account by display name or ID, use the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account). Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.
+Manages RWX service-account metadata without [issuing credentials](https://www.rwx.com/docs/service-accounts#access-tokens) or managing permissions. Use [rwx_service_account_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions) for direct permissions, [rwx_vault_service_account_attachment](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment) for task-scoped token access, or [rwx_vault_service_account_access_grant](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant) for vault access. To reference an existing account by immutable name, display name, or ID, use the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account). Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.
 
 ## Required permissions
 
@@ -40,7 +40,7 @@ resource "rwx_service_account" "deploy" {
 
 - `id` (String) The stable service-account ID.
 - `identity_id` (String) The stable identity ID.
-- `name` (String) The service-account name returned by RWX for use in vault resources and run definitions.
+- `name` (String) The immutable service-account name returned by RWX for use in vault resources and run definitions.
 
 ## Import
 
