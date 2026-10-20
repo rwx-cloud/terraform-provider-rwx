@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -108,6 +109,10 @@ func (r *GroupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading group from RWX", err.Error())
+		return
+	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/groups/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this group, then retry the refresh.")
 		return
 	}
 	state = groupModel(group)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -222,6 +223,11 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/vars/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this variable, then retry the refresh.")
+		return
+	}
+
 	state.Value = types.StringValue(variable.Value)
 	encodedVaultID, err := encodePrivateVaultID(vaultID)
 	if err != nil {
@@ -263,6 +269,10 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	if state.Value.Equal(plan.Value) {
+		if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/vars/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
+			resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this variable, then retry the update.")
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}

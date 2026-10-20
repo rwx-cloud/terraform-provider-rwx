@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -228,6 +229,11 @@ func (r *accessGrantResource) Read(ctx context.Context, req resource.ReadRequest
 			"Access grant type does not match resource",
 			fmt.Sprintf("Access grant %q belongs to a %s, but this resource manages %ss.", grant.ID, principalTypeLabel(grant.Principal.Type), r.principalLabel()),
 		)
+		return
+	}
+
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(grant.Vault.ID)+"/access_grants/"+url.PathEscape(grant.ID)); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this access grant, then retry the refresh.")
 		return
 	}
 

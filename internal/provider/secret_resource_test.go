@@ -80,6 +80,8 @@ func TestSecretResourceImport(t *testing.T) {
 						metadata := secret
 						metadata.SecretValue = ""
 						_ = json.NewEncoder(w).Encode(metadata)
+					case req.Method == http.MethodPost && req.URL.Path == "/mint/api/vaults/secrets/existing-secret/terraform_management" && req.URL.Query().Get("vault_id") == "vault-123":
+						w.WriteHeader(http.StatusNoContent)
 					case req.Method == http.MethodPost && req.URL.Path == "/mint/api/vaults/secrets":
 						var body struct {
 							VaultID string       `json:"vault_id"`

@@ -274,6 +274,12 @@ func (b *accessGrantBackend) RoundTrip(req *http.Request) (*http.Response, error
 	const grantPath = "/mint/api/vaults/vault-id/access_grants/"
 	if strings.HasPrefix(path, grantPath) {
 		grantID := strings.TrimPrefix(path, grantPath)
+		if req.Method == http.MethodPost && strings.HasSuffix(grantID, "/terraform_management") {
+			if _, ok := b.grants[strings.TrimSuffix(grantID, "/terraform_management")]; ok {
+				return accessGrantJSONResponse(http.StatusNoContent, nil), nil
+			}
+			return accessGrantJSONResponse(http.StatusNotFound, nil), nil
+		}
 		grant, ok := b.grants[grantID]
 		switch req.Method {
 		case http.MethodGet:

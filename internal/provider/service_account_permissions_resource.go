@@ -150,6 +150,10 @@ func (r *ServiceAccountPermissionsResource) Read(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Error reading service account permissions from RWX", err.Error())
 		return
 	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/service_accounts/"+url.PathEscape(state.ID.ValueString())+"/permissions"); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage these service account permissions, then retry the refresh.")
+		return
+	}
 	state.ServiceAccountID = state.ID
 	value, diags := permissionsModel(ctx, permissions)
 	state.Permissions = value
@@ -185,7 +189,7 @@ func (r *ServiceAccountPermissionsResource) Delete(ctx context.Context, req reso
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if _, err := r.client.ReplaceServiceAccountPermissions(state.ID.ValueString(), []api.Permission{}); err != nil && !errors.Is(err, api.ErrNotFound) {
+	if err := r.client.ClearServiceAccountPermissions(state.ID.ValueString()); err != nil && !errors.Is(err, api.ErrNotFound) {
 		resp.Diagnostics.AddError("Error clearing service account permissions in RWX", err.Error())
 	}
 }

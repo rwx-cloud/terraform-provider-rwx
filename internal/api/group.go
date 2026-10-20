@@ -113,6 +113,7 @@ func (c Client) writeGroup(method, endpoint string, group Group, status int) (Gr
 		return Group{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 	return c.doGroupRequest(req, status)
 }
 

@@ -79,6 +79,9 @@ func (c Client) directoryGroupMappingRequest(ctx context.Context, method, endpoi
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if method == http.MethodPost || method == http.MethodPatch {
+		req.Header.Set(TerraformManagementHeader, "claim")
+	}
 	resp, err := c.RoundTrip(req)
 	if err != nil {
 		return DirectoryGroupMappingResponse{}, fmt.Errorf("HTTP request failed: %w", err)

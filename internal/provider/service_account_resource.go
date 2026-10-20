@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -129,6 +130,10 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading service account from RWX", err.Error())
+		return
+	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/service_accounts/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this service account, then retry the refresh.")
 		return
 	}
 	state = serviceAccountModel(account)

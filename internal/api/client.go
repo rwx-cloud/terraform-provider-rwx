@@ -180,6 +180,7 @@ func (c Client) SetSecretInVault(vault VaultSelector, secret Secret) (Secret, er
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	resp, err := c.RoundTrip(req)
 	if err != nil {
@@ -240,6 +241,7 @@ func (c Client) SetVariableInVault(vault VaultSelector, variable Variable) (Vari
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	resp, err := c.RoundTrip(req)
 	if err != nil {

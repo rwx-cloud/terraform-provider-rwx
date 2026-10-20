@@ -113,6 +113,7 @@ func (c Client) writeOIDCToken(method string, endpoint string, body any, expecte
 		return OIDCToken{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	return c.doOIDCTokenRequest(req, expectedStatus)
 }

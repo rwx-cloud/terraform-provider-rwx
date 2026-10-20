@@ -103,6 +103,9 @@ data "rwx_group" "test" {
 			),
 		}},
 	})
+	if b.claims != 0 {
+		t.Fatal("data-source lookup claimed group management")
+	}
 }
 
 func TestGroupDataSourcePlanErrors(t *testing.T) {
@@ -158,6 +161,7 @@ type groupBackend struct {
 	nextID     int
 	failMethod string
 	failStatus int
+	claims     int
 }
 
 func installGroupBackend(t *testing.T) *groupBackend {
@@ -178,6 +182,9 @@ func (b *groupBackend) setFailure(method string, status int) {
 func (b *groupBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if req.Method == http.MethodGet && req.Header.Get(api.TerraformManagementHeader) != "" {
+		return nil, fmt.Errorf("GET carried management intent")
+	}
 	if req.Header.Get("Authorization") != "Bearer service-account-test-token" {
 		return groupJSONResponse(http.StatusUnauthorized, map[string]any{"error": "Unauthorized"}), nil
 	}
@@ -186,6 +193,10 @@ func (b *groupBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 			return groupJSONResponse(b.failStatus, map[string]any{"errors": []string{"System groups cannot be edited or deleted."}}), nil
 		}
 		return groupJSONResponse(b.failStatus, map[string]any{"error_messages": []map[string]string{{"message": "Requires group:manage permission"}}}), nil
+	}
+	if req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/terraform_management") {
+		b.claims++
+		return groupJSONResponse(http.StatusNoContent, nil), nil
 	}
 	if req.URL.Path == "/mint/api/groups" {
 		if req.Method == http.MethodGet {

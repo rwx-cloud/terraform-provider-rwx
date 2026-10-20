@@ -17,6 +17,15 @@ func (c Client) GetGroupPermissions(id string) ([]Permission, error) {
 }
 
 func (c Client) ReplaceGroupPermissions(id string, permissions []Permission) ([]Permission, error) {
+	return c.replaceGroupPermissions(id, permissions, "claim")
+}
+
+func (c Client) ClearGroupPermissions(id string) error {
+	_, err := c.replaceGroupPermissions(id, []Permission{}, "release")
+	return err
+}
+
+func (c Client) replaceGroupPermissions(id string, permissions []Permission, management string) ([]Permission, error) {
 	if permissions == nil {
 		permissions = []Permission{}
 	}
@@ -29,6 +38,7 @@ func (c Client) ReplaceGroupPermissions(id string, permissions []Permission) ([]
 		return nil, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, management)
 	return c.doGroupPermissionsRequest(req)
 }
 

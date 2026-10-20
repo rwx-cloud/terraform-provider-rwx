@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -183,6 +184,11 @@ func (r *VaultServiceAccountAttachmentResource) Read(ctx context.Context, req re
 		return
 	}
 
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(vaultID)+"/service_account_attachments/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this service-account attachment, then retry the refresh.")
+		return
+	}
+
 	state = vaultServiceAccountAttachmentResourceModel(attachment, state.vaultSelector())
 	encodedVaultID, err := encodePrivateVaultID(attachment.Vault.ID)
 	if err != nil {
@@ -211,6 +217,11 @@ func (r *VaultServiceAccountAttachmentResource) Update(ctx context.Context, req 
 	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), previousID)
 	resp.Diagnostics.Append(selectorDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(vaultID)+"/service_account_attachments/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this service-account attachment, then retry the update.")
 		return
 	}
 

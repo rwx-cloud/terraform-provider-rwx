@@ -33,6 +33,7 @@ func (c Client) CreateVaultServiceAccountAttachment(vaultID string, serviceAccou
 		return VaultServiceAccountAttachment{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	return c.doVaultServiceAccountAttachmentRequest(req, http.StatusCreated)
 }
