@@ -32,7 +32,7 @@ data "rwx_group" "test" {
   depends_on = [rwx_group.test]
 }
 data "rwx_service_account" "test" {
-  name = rwx_service_account.test.name
+  key = rwx_service_account.test.key
 }
 `, name, description, name, description)
 	}
@@ -42,7 +42,7 @@ data "rwx_service_account" "test" {
 			resource.TestCheckResourceAttr("data.rwx_group.test", "id", group.ID),
 			resource.TestCheckResourceAttr("rwx_service_account.test", "id", account.ID),
 			resource.TestCheckResourceAttr("data.rwx_service_account.test", "id", account.ID),
-			resource.TestCheckResourceAttr("rwx_service_account.test", "name", immutableName),
+			resource.TestCheckResourceAttr("rwx_service_account.test", "key", immutableName),
 			resource.TestCheckResourceAttr("rwx_group.test", "name", name),
 			resource.TestCheckResourceAttr("rwx_service_account.test", "display_name", name),
 		)
@@ -77,7 +77,7 @@ import {
 	integrationError(t, err, api.ErrNotFound)
 	_, err = client.GetServiceAccount(account.ID)
 	integrationError(t, err, api.ErrNotFound)
-	_, err = client.FindServiceAccount(immutableName, "")
+	_, err = client.FindServiceAccount(immutableName)
 	integrationError(t, err, api.ErrNotFound)
 }
 

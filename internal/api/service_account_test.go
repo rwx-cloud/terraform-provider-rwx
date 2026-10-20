@@ -33,42 +33,36 @@ func TestServiceAccountFailureClassification(t *testing.T) {
 }
 
 func TestServiceAccountLookupPagination(t *testing.T) {
-	for _, selector := range []string{"name", "display_name"} {
-		for _, denied := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%s/denied=%t", selector, denied), func(t *testing.T) {
-				requests := 0
-				client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
-					requests++
-					if requests > 2 {
-						return nil, fmt.Errorf("lookup did not stop at the final page")
-					}
-					if req.URL.Query().Get(selector) != "Engineering & IT" {
-						t.Fatalf("lookup filter was lost: %s", req.URL)
-					}
-					if requests == 2 {
-						if req.URL.Query().Get("cursor") != "next+/=&" {
-							t.Fatalf("cursor was not preserved: %s", req.URL)
-						}
-						if denied {
-							return jsonResponse(http.StatusForbidden, `{"error":"org:access required"}`), nil
-						}
-						return jsonResponse(http.StatusOK, `{"service_accounts":[],"pagination":{"next_cursor":""}}`), nil
-					}
-					return jsonResponse(http.StatusOK, `{"service_accounts":[{"id":"match-1","name":"Engineering & IT"}],"pagination":{"next_cursor":"next+/=&"}}`), nil
-				}}
-				name, displayName := "Engineering & IT", ""
-				if selector == "display_name" {
-					name, displayName = "", name
+	for _, denied := range []bool{false, true} {
+		t.Run(fmt.Sprintf("denied=%t", denied), func(t *testing.T) {
+			requests := 0
+			client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+				requests++
+				if requests > 2 {
+					return nil, fmt.Errorf("lookup did not stop at the final page")
 				}
-				account, err := client.FindServiceAccount(name, displayName)
-				if denied {
-					if err == nil || errors.Is(err, ErrNotFound) || !strings.Contains(err.Error(), "org:access required") || account.ID != "" {
-						t.Fatalf("lookup returned a partial match or hid denial: ID=%q, error=%v", account.ID, err)
-					}
-				} else if err != nil || account.ID != "match-1" {
-					t.Fatalf("lookup: ID=%q, error=%v; want match-1", account.ID, err)
+				if req.URL.Query().Get("key") != "Engineering & IT" || req.URL.Query().Has("name") || req.URL.Query().Has("display_name") {
+					t.Fatalf("lookup filter was lost: %s", req.URL)
 				}
-			})
-		}
+				if requests == 2 {
+					if req.URL.Query().Get("cursor") != "next+/=&" {
+						t.Fatalf("cursor was not preserved: %s", req.URL)
+					}
+					if denied {
+						return jsonResponse(http.StatusForbidden, `{"error":"org:access required"}`), nil
+					}
+					return jsonResponse(http.StatusOK, `{"service_accounts":[],"pagination":{"next_cursor":""}}`), nil
+				}
+				return jsonResponse(http.StatusOK, `{"service_accounts":[{"id":"match-1","name":"Engineering & IT"}],"pagination":{"next_cursor":"next+/=&"}}`), nil
+			}}
+			account, err := client.FindServiceAccount("Engineering & IT")
+			if denied {
+				if err == nil || errors.Is(err, ErrNotFound) || !strings.Contains(err.Error(), "org:access required") || account.ID != "" {
+					t.Fatalf("lookup returned a partial match or hid denial: ID=%q, error=%v", account.ID, err)
+				}
+			} else if err != nil || account.ID != "match-1" {
+				t.Fatalf("lookup: ID=%q, error=%v; want match-1", account.ID, err)
+			}
+		})
 	}
 }

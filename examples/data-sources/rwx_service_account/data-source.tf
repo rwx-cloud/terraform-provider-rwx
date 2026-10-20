@@ -1,9 +1,5 @@
 data "rwx_service_account" "deploy" {
-  display_name = "Deploy automation"
-}
-
-data "rwx_service_account" "by_name" {
-  name = "deploy-automation"
+  key = "deploy-automation"
 }
 
 data "rwx_service_account" "by_id" {

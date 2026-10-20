@@ -32,28 +32,26 @@ func (d *ServiceAccountDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *ServiceAccountDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up one active RWX service account by immutable name, display name, or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the immutable name or ID if multiple accounts match a display name. Does not expose credentials or permissions.",
+		MarkdownDescription: "Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. Missing matches fail during planning when inputs are known. Display names cannot be used for lookup because they can change. Does not expose credentials or permissions.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: "The stable service-account ID. Configure exactly one of `id`, `name`, or `display_name`.",
+				MarkdownDescription: "The stable service-account ID. Configure exactly one of `id` or `key`.",
 				Optional:            true,
 				Computed:            true,
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(1),
-					stringvalidator.ExactlyOneOf(path.MatchRoot("name"), path.MatchRoot("display_name")),
+					stringvalidator.ExactlyOneOf(path.MatchRoot("key")),
 				},
 			},
-			"name": schema.StringAttribute{
-				MarkdownDescription: "The immutable service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.",
+			"key": schema.StringAttribute{
+				MarkdownDescription: "The immutable service-account key shown in RWX, also used in vault resources and run definitions. Configure exactly one of `id` or `key`.",
 				Optional:            true,
 				Computed:            true,
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"display_name": schema.StringAttribute{
-				MarkdownDescription: "The display name. Legacy duplicates cause an ambiguity error. Configure exactly one of `id`, `name`, or `display_name`.",
-				Optional:            true,
+				MarkdownDescription: "The mutable display name. Read-only; use `id` or `key` for lookup.",
 				Computed:            true,
-				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},
 			},
 			"identity_id": schema.StringAttribute{
 				Description: "The stable identity ID.",
@@ -95,7 +93,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	if !config.ID.IsNull() {
 		account, err = d.client.GetServiceAccount(config.ID.ValueString())
 	} else {
-		account, err = d.client.FindServiceAccount(config.Name.ValueString(), config.DisplayName.ValueString())
+		account, err = d.client.FindServiceAccount(config.Key.ValueString())
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error looking up service account in RWX", err.Error())

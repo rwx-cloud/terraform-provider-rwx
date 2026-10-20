@@ -3,22 +3,18 @@
 page_title: "rwx_service_account Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up one active RWX service account by immutable name, display name, or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the immutable name or ID if multiple accounts match a display name. Does not expose credentials or permissions.
+  Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. Missing matches fail during planning when inputs are known. Display names cannot be used for lookup because they can change. Does not expose credentials or permissions.
 ---
 
 # rwx_service_account (Data Source)
 
-Looks up one active RWX service account by immutable name, display name, or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the immutable name or ID if multiple accounts match a display name. Does not expose credentials or permissions.
+Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. Missing matches fail during planning when inputs are known. Display names cannot be used for lookup because they can change. Does not expose credentials or permissions.
 
 ## Example Usage
 
 ```terraform
 data "rwx_service_account" "deploy" {
-  display_name = "Deploy automation"
-}
-
-data "rwx_service_account" "by_name" {
-  name = "deploy-automation"
+  key = "deploy-automation"
 }
 
 data "rwx_service_account" "by_id" {
@@ -31,11 +27,11 @@ data "rwx_service_account" "by_id" {
 
 ### Optional
 
-- `display_name` (String) The display name. Legacy duplicates cause an ambiguity error. Configure exactly one of `id`, `name`, or `display_name`.
-- `id` (String) The stable service-account ID. Configure exactly one of `id`, `name`, or `display_name`.
-- `name` (String) The immutable service-account name returned by RWX for use in vault resources and run definitions. Configure exactly one of `id`, `name`, or `display_name`.
+- `id` (String) The stable service-account ID. Configure exactly one of `id` or `key`.
+- `key` (String) The immutable service-account key shown in RWX, also used in vault resources and run definitions. Configure exactly one of `id` or `key`.
 
 ### Read-Only
 
 - `description` (String) The service-account description.
+- `display_name` (String) The mutable display name. Read-only; use `id` or `key` for lookup.
 - `identity_id` (String) The stable identity ID.

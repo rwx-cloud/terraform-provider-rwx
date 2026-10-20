@@ -50,7 +50,7 @@ func (b *serviceAccountBackend) RoundTrip(req *http.Request) (*http.Response, er
 			if b.secondPage && req.URL.Query().Get("cursor") != "next+/=&" {
 				return nil, fmt.Errorf("cursor not preserved")
 			}
-			if req.URL.Query().Get("name") == "" && req.URL.Query().Get("display_name") == "" {
+			if req.URL.Query().Get("key") == "" || req.URL.Query().Has("name") || req.URL.Query().Has("display_name") {
 				return nil, fmt.Errorf("filter not preserved")
 			}
 			for i := 0; i < b.lookupCount; i++ {
@@ -151,7 +151,7 @@ func TestServiceAccountLifecycle(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{Config: initial, Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("rwx_service_account.test", "name", "immutable-1"),
+				resource.TestCheckResourceAttr("rwx_service_account.test", "key", "immutable-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "identity_id", "identity-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "description", "Initial description"),
 				func(s *terraform.State) error {
@@ -165,7 +165,7 @@ func TestServiceAccountLifecycle(t *testing.T) {
 			{Config: renamed, Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("rwx_service_account.test", "display_name", "Release automation"),
 				resource.TestCheckNoResourceAttr("rwx_service_account.test", "description"),
-				resource.TestCheckResourceAttr("rwx_service_account.test", "name", "immutable-1"),
+				resource.TestCheckResourceAttr("rwx_service_account.test", "key", "immutable-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "identity_id", "identity-1"),
 				func(s *terraform.State) error {
 					if s.RootModule().Resources["rwx_service_account.test"].Primary.ID != id {
@@ -193,15 +193,15 @@ func TestServiceAccountLifecycle(t *testing.T) {
 }
 
 func TestServiceAccountLookup(t *testing.T) {
-	for _, selector := range []string{"id", "name", "display_name"} {
+	for _, selector := range []string{"id", "key"} {
 		t.Run(selector, func(t *testing.T) {
 			backend := &serviceAccountBackend{account: &api.ServiceAccount{ID: "account-1", IdentityID: "identity-1", Name: "immutable-1", DisplayName: "Deploy automation"}, lookupCount: 1, secondPage: true}
 			useServiceAccountBackend(t, backend)
-			value := map[string]string{"id": "account-1", "name": "immutable-1", "display_name": "Deploy automation"}[selector]
+			value := map[string]string{"id": "account-1", "key": "immutable-1"}[selector]
 			resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: testAccProtoV6ProviderFactories, Steps: []resource.TestStep{
 				{Config: serviceAccountProviderConfig + fmt.Sprintf(`data "rwx_service_account" "test" { %s = %q }`, selector, value), Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.rwx_service_account.test", "id", "account-1"),
-					resource.TestCheckResourceAttr("data.rwx_service_account.test", "name", "immutable-1"),
+					resource.TestCheckResourceAttr("data.rwx_service_account.test", "key", "immutable-1"),
 					resource.TestCheckResourceAttr("data.rwx_service_account.test", "display_name", "Deploy automation"),
 				)},
 			}})
@@ -214,14 +214,16 @@ func TestServiceAccountLookupPlanErrors(t *testing.T) {
 		name, selector, pattern string
 		count, status           int
 	}{
-		{"missing-name", `name="missing"`, "not found", 0, 0},
-		{"missing-display-name", `display_name="missing"`, "not found", 0, 0},
+		{"missing-key", `key="missing"`, "not found", 0, 0},
+		{"display-name", `display_name="Deploy automation"`, "Invalid Configuration for Read-Only Attribute", 0, 0},
+		{"display-name-with-key", "display_name=\"Deploy automation\"\nkey=\"immutable-1\"", "Invalid Configuration for Read-Only Attribute", 0, 0},
+		{"legacy-name", `name="immutable-1"`, "Unsupported argument", 0, 0},
 		{"missing-id", `id="missing"`, "not found", 1, 0},
-		{"ambiguous", `display_name="duplicate"`, "multiple active service accounts matched", 2, 0},
-		{"unauthorized", `name="immutable-1"`, "guarded failure", 1, 401},
+		{"ambiguous", `key="duplicate"`, "multiple active service accounts matched", 2, 0},
+		{"unauthorized", `key="immutable-1"`, "guarded failure", 1, 401},
 		{"forbidden", `id="account-1"`, "guarded failure", 1, 403},
 		{"no-selector", "", "Invalid Attribute Combination", 0, 0},
-		{"conflicting-selectors", "name=\"one\"\nid=\"two\"", "Invalid Attribute Combination", 0, 0},
+		{"conflicting-selectors", "key=\"one\"\nid=\"two\"", "Invalid Attribute Combination", 0, 0},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			useServiceAccountBackend(t, &serviceAccountBackend{account: &api.ServiceAccount{ID: "account-1"}, lookupCount: test.count, secondPage: true, status: test.status})
@@ -234,7 +236,7 @@ func TestServiceAccountLookupUnknownID(t *testing.T) {
 	useServiceAccountBackend(t, &serviceAccountBackend{})
 	resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: testAccProtoV6ProviderFactories, Steps: []resource.TestStep{{Config: serviceAccountConfig("Deploy", "null") + `
 data "rwx_service_account" "test" { id = rwx_service_account.test.id }
-`, Check: resource.TestCheckResourceAttr("data.rwx_service_account.test", "name", "immutable-1")}}})
+`, Check: resource.TestCheckResourceAttr("data.rwx_service_account.test", "key", "immutable-1")}}})
 }
 
 func TestServiceAccountCreateConflict(t *testing.T) {
