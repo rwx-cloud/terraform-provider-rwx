@@ -3,12 +3,12 @@
 page_title: "rwx_group Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an RWX group by its stable ID or exact name. Configure exactly one of id or name; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known. Requires org:access.
+  Looks up an RWX group by its stable ID or exact name. Configure exactly one of id or name; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known.
 ---
 
 # rwx_group (Data Source)
 
-Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known. Requires `org:access`.
+Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known.
 
 ## Example Usage
 

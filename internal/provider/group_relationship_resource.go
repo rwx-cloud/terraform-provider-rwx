@@ -44,7 +44,7 @@ func (r *GroupRelationshipResource) Metadata(ctx context.Context, req resource.M
 
 func (r *GroupRelationshipResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires `org:access` to read and `group:manage` on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.",
+		MarkdownDescription: "Manages one direct parent/child group relationship. Children inherit their parents' permissions; parents do not inherit their children's permissions. A group can have multiple parents and children. Other relationships are preserved. Requires `group:manage` on the parent to add or remove the relationship. The server rejects cycles and removals that would leave the organization without an administrator.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The relationship identity, in parent-group-id/child-group-id format.",

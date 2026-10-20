@@ -3,12 +3,12 @@
 page_title: "rwx_service_account Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions. Requires org:access.
+  Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions.
 ---
 
 # rwx_service_account (Data Source)
 
-Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions. Requires `org:access`.
+Looks up one active RWX service account by display name or ID. Configure one lookup attribute; the remaining attributes return the resolved values. Display-name matches are exact and case-sensitive. Missing or ambiguous matches fail during planning when inputs are known; use the account ID if multiple accounts match a display name. Does not expose credentials or permissions.
 
 ## Example Usage
 

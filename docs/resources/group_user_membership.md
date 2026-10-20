@@ -3,12 +3,12 @@
 page_title: "rwx_group_user_membership Resource - rwx"
 subcategory: ""
 description: |-
-  Manages one direct manual user membership in a group. Other users, inherited membership, and directory-owned membership are preserved. Import reads only the manual contribution; inherited or directory-only membership cannot be imported. Manual user membership changes are rejected in SCIM-managed organizations. Requires org:access to read and group:manage on the group to add or remove membership.
+  Manages one direct manual user membership in a group. Other users, inherited membership, and directory-owned membership are preserved. Import reads only the manual contribution; inherited or directory-only membership cannot be imported. Manual user membership changes are rejected in SCIM-managed organizations. Requires group:manage on the group to add or remove membership.
 ---
 
 # rwx_group_user_membership (Resource)
 
-Manages one direct manual user membership in a group. Other users, inherited membership, and directory-owned membership are preserved. Import reads only the manual contribution; inherited or directory-only membership cannot be imported. Manual user membership changes are rejected in SCIM-managed organizations. Requires `org:access` to read and `group:manage` on the group to add or remove membership.
+Manages one direct manual user membership in a group. Other users, inherited membership, and directory-owned membership are preserved. Import reads only the manual contribution; inherited or directory-only membership cannot be imported. Manual user membership changes are rejected in SCIM-managed organizations. Requires `group:manage` on the group to add or remove membership.
 
 ## Example Usage
 

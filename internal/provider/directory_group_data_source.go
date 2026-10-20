@@ -39,7 +39,7 @@ func (d *DirectoryGroupDataSource) Metadata(ctx context.Context, req datasource.
 
 func (d *DirectoryGroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`; both selectors return their resolved values. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement. Requires `org:access`.",
+		MarkdownDescription: "Looks up an existing identity-provider group in an RWX directory. Configure `directory_id` and exactly one of `name` or `id`; both selectors return their resolved values. This data source does not provision groups or manage IdP-owned rosters. Name lookups must match exactly one group in the directory. Use the stable local RWX `id` to retain identity across renames; ID lookups never fall back to a same-named replacement.",
 		Attributes: map[string]schema.Attribute{
 			"directory_id": schema.StringAttribute{
 				Description: "The local RWX directory ID. The directory must belong to the authenticated organization.",

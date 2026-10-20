@@ -3,12 +3,12 @@
 page_title: "rwx_user Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an existing active user in the authenticated organization by email or stable RWX user ID. Requires org:access with a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
+  Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
 ---
 
 # rwx_user (Data Source)
 
-Looks up an existing active user in the authenticated organization by email or stable RWX user ID. Requires `org:access` with a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
+Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
 
 ## Example Usage
 
