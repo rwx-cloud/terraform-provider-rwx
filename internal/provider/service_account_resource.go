@@ -35,7 +35,7 @@ type ServiceAccountResource struct {
 type ServiceAccountModel struct {
 	ID          types.String `tfsdk:"id"`
 	IdentityID  types.String `tfsdk:"identity_id"`
-	Name        types.String `tfsdk:"name"`
+	Key         types.String `tfsdk:"key"`
 	DisplayName types.String `tfsdk:"display_name"`
 	Description types.String `tfsdk:"description"`
 }
@@ -46,7 +46,7 @@ func (r *ServiceAccountResource) Metadata(ctx context.Context, req resource.Meta
 
 func (r *ServiceAccountResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages RWX service-account metadata without [issuing credentials](https://www.rwx.com/docs/service-accounts#access-tokens) or managing permissions. Use [rwx_service_account_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions) for direct permissions, [rwx_vault_service_account_attachment](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment) for task-scoped token access, or [rwx_vault_service_account_access_grant](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant) for vault access. To reference an existing account by immutable name, display name, or ID, use the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account). Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.\n\n## Required permissions\n\nThe provider's access token needs `service_account:create` to create service accounts and `service_account:manage` on the target account to update or deactivate it.",
+		MarkdownDescription: "Manages RWX service-account metadata without [issuing credentials](https://www.rwx.com/docs/service-accounts#access-tokens) or managing permissions. Use [rwx_service_account_permissions](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/service_account_permissions) for direct permissions, [rwx_vault_service_account_attachment](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_attachment) for task-scoped token access, or [rwx_vault_service_account_access_grant](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/vault_service_account_access_grant) for vault access. To reference an existing account by immutable key or ID, use the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account). Import by the stable service-account ID. Renaming the display name preserves identity. Destroy deactivates the account, revokes its tokens, and ends its group memberships.\n\n## Required permissions\n\nThe provider's access token needs `service_account:create` to create service accounts and `service_account:manage` on the target account to update or deactivate it.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable service-account ID.",
@@ -62,8 +62,8 @@ func (r *ServiceAccountResource) Schema(ctx context.Context, req resource.Schema
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"name": schema.StringAttribute{
-				Description: "The immutable service-account name returned by RWX for use in vault resources and run definitions.",
+			"key": schema.StringAttribute{
+				Description: "The immutable service-account key shown in RWX, also used in vault resources and run definitions.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -180,7 +180,7 @@ func serviceAccountModel(account api.ServiceAccount) ServiceAccountModel {
 	return ServiceAccountModel{
 		ID:          types.StringValue(account.ID),
 		IdentityID:  types.StringValue(account.IdentityID),
-		Name:        types.StringValue(account.Name),
+		Key:         types.StringValue(account.Name),
 		DisplayName: types.StringValue(account.DisplayName),
 		Description: types.StringPointerValue(account.Description),
 	}

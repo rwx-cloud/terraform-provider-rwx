@@ -8,5 +8,5 @@ resource "rwx_service_account" "deploy" {
 
 resource "rwx_vault_service_account_attachment" "example" {
   vault_id        = rwx_vault.example.id
-  service_account = rwx_service_account.deploy.name
+  service_account = rwx_service_account.deploy.key
 }

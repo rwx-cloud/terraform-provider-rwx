@@ -18,7 +18,7 @@ resource "rwx_service_account_permissions" "automation" {
 }
 
 data "rwx_service_account" "reporting" {
-  display_name = "Reporting"
+  key = "reporting"
 }
 
 resource "rwx_service_account_permissions" "reporting" {

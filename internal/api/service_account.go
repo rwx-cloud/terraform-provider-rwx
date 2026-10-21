@@ -51,13 +51,10 @@ func (c Client) DeleteServiceAccount(id string) error {
 	return nil
 }
 
-func (c Client) ListServiceAccounts(name, displayName string) ([]ServiceAccount, error) {
+func (c Client) ListServiceAccounts(key string) ([]ServiceAccount, error) {
 	query := url.Values{"limit": {"100"}}
-	if name != "" {
-		query.Set("name", name)
-	}
-	if displayName != "" {
-		query.Set("display_name", displayName)
+	if key != "" {
+		query.Set("key", key)
 	}
 	var accounts []ServiceAccount
 	for {
@@ -93,8 +90,8 @@ func (c Client) ListServiceAccounts(name, displayName string) ([]ServiceAccount,
 	}
 }
 
-func (c Client) FindServiceAccount(name, displayName string) (ServiceAccount, error) {
-	accounts, err := c.ListServiceAccounts(name, displayName)
+func (c Client) FindServiceAccount(key string) (ServiceAccount, error) {
+	accounts, err := c.ListServiceAccounts(key)
 	if err != nil {
 		return ServiceAccount{}, err
 	}
@@ -102,7 +99,7 @@ func (c Client) FindServiceAccount(name, displayName string) (ServiceAccount, er
 		return ServiceAccount{}, ErrNotFound
 	}
 	if len(accounts) > 1 {
-		return ServiceAccount{}, fmt.Errorf("multiple active service accounts matched; use an immutable name or ID instead")
+		return ServiceAccount{}, fmt.Errorf("multiple active service accounts matched key %q", key)
 	}
 	return accounts[0], nil
 }
