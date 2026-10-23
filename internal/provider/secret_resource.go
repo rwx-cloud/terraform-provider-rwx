@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -232,6 +233,11 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/secrets/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this secret, then retry the refresh.")
+		return
+	}
+
 	if secret.Description != "" {
 		state.Description = types.StringValue(secret.Description)
 	}
@@ -285,6 +291,10 @@ func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest,
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	if state.SecretValue.Equal(plan.SecretValue) && state.Description.Equal(plan.Description) {
+		if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/secrets/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
+			resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this secret, then retry the update.")
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}

@@ -161,6 +161,7 @@ func (c Client) writeVault(method string, endpoint string, body any, expectedSta
 		return Vault{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	return c.doVaultRequest(req, expectedStatus)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -214,6 +215,11 @@ func (r *OIDCTokenResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(token.Vault.ID)+"/oidc_tokens/"+url.PathEscape(token.ID)); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this OIDC token definition, then retry the refresh.")
+		return
+	}
+
 	state = oidcTokenResourceModel(token, state.vaultSelector())
 	encodedVaultID, err := encodePrivateVaultID(token.Vault.ID)
 	if err != nil {
@@ -256,6 +262,10 @@ func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateReque
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
 	if state.Name.Equal(plan.Name) && state.Audience.Equal(plan.Audience) {
+		if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(vaultID)+"/oidc_tokens/"+url.PathEscape(state.ID.ValueString())); err != nil {
+			resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this OIDC token definition, then retry the update.")
+			return
+		}
 		state.Vault = plan.Vault
 		state.VaultID = plan.VaultID
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

@@ -135,6 +135,9 @@ func TestFindAccessGrant(t *testing.T) {
 	requests := 0
 	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
 		requests++
+		if req.Method != http.MethodGet || req.Header.Get(TerraformManagementHeader) != "" {
+			t.Fatalf("lookup attempted attribution: %s %s", req.Method, req.URL)
+		}
 		switch req.URL.String() {
 		case "/mint/api/vaults?limit=100":
 			return jsonResponse(http.StatusOK, `{"vaults":[{"id":"first-vault","name":"first"}],"pagination":{"next_cursor":"page2"}}`), nil

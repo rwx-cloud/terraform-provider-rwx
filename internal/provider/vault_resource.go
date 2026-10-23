@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -207,6 +208,10 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			return
 		}
 		resp.Diagnostics.AddError("Error reading vault from RWX", "Unexpected error: "+err.Error())
+		return
+	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this vault, then retry the refresh.")
 		return
 	}
 

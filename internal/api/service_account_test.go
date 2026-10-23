@@ -37,6 +37,9 @@ func TestServiceAccountLookupPagination(t *testing.T) {
 		t.Run(fmt.Sprintf("denied=%t", denied), func(t *testing.T) {
 			requests := 0
 			client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+				if req.Method != http.MethodGet || req.Header.Get(TerraformManagementHeader) != "" {
+					t.Fatalf("lookup attempted attribution: %s %s", req.Method, req.URL)
+				}
 				requests++
 				if requests > 2 {
 					return nil, fmt.Errorf("lookup did not stop at the final page")

@@ -167,6 +167,9 @@ func (b *groupUserMembershipBackend) RoundTrip(req *http.Request) (*http.Respons
 	if req.Header.Get("Authorization") != "Bearer service-account-test-token" {
 		return respond(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
+	if req.Method == http.MethodPost && req.URL.Path == "/mint/api/group_user_memberships/terraform_management" {
+		return respond(http.StatusNoContent, nil)
+	}
 	if req.URL.Path != "/mint/api/group_user_memberships" {
 		return nil, fmt.Errorf("unexpected request: %s %s", req.Method, req.URL)
 	}

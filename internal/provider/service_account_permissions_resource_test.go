@@ -50,6 +50,9 @@ func (b *serviceAccountPermissionsBackend) RoundTrip(req *http.Request) (*http.R
 	if b.readStatus != 0 && req.Method == http.MethodGet {
 		return respond(b.readStatus, map[string][]string{"errors": {"fixture read denied"}})
 	}
+	if req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/terraform_management") {
+		return respond(http.StatusNoContent, nil)
+	}
 	if req.URL.Path == "/mint/api/permission_catalog" && req.Method == http.MethodGet {
 		id := req.URL.Query().Get("service_account_id")
 		if _, ok := b.direct[id]; id != "" && !ok {

@@ -57,6 +57,9 @@ func (b *mappingBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	base := "/mint/api/directory_group_mappings"
 	id := strings.TrimPrefix(req.URL.Path, base+"/")
+	if req.Method == http.MethodPost && strings.HasSuffix(id, "/terraform_management") {
+		return respond(http.StatusNoContent, nil)
+	}
 	if strings.HasSuffix(id, "/reconciliation") {
 		b.polls++
 		id = strings.TrimSuffix(id, "/reconciliation")

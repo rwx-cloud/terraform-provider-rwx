@@ -32,6 +32,7 @@ func (c Client) CreateVaultApprover(vaultID string, email string) (VaultApprover
 		return VaultApprover{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	return c.doVaultApproverRequest(req, http.StatusCreated)
 }

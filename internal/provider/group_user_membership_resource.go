@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -106,6 +107,11 @@ func (r *GroupUserMembershipResource) Read(ctx context.Context, req resource.Rea
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading group user membership from RWX", err.Error())
+		return
+	}
+	query := url.Values{"group_id": {state.GroupID.ValueString()}, "user_id": {state.UserID.ValueString()}}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/group_user_memberships?"+query.Encode()); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this membership, then retry the refresh.")
 		return
 	}
 	state = groupUserMembershipResourceModel(membership)

@@ -210,6 +210,9 @@ func (b *groupPermissionsBackend) RoundTrip(req *http.Request) (*http.Response, 
 		}
 		return groupPermissionsResponse(b.failStatus, map[string]any{"error_messages": []map[string]string{{"message": "Requires group:manage permission"}}}), nil
 	}
+	if req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/terraform_management") {
+		return groupPermissionsResponse(http.StatusNoContent, nil), nil
+	}
 	if req.URL.Path == "/mint/api/permission_catalog" {
 		id := req.URL.Query().Get("group_id")
 		if _, ok := b.direct[id]; !ok && id != "" {

@@ -121,6 +121,7 @@ func (c Client) writeServiceAccount(method, endpoint string, account ServiceAcco
 		return ServiceAccount{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 	return c.doServiceAccountRequest(req, status)
 }
 

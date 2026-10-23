@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -178,6 +179,11 @@ func (r *VaultApproverResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(vaultID)+"/approvers/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this vault approver, then retry the refresh.")
+		return
+	}
+
 	state = vaultApproverResourceModel(approver, state.vaultSelector())
 	encodedVaultID, err := encodePrivateVaultID(approver.Vault.ID)
 	if err != nil {
@@ -206,6 +212,11 @@ func (r *VaultApproverResource) Update(ctx context.Context, req resource.UpdateR
 	vaultID, selectorDiags := resolveVaultID(r.client, plan.vaultSelector(), previousID)
 	resp.Diagnostics.Append(selectorDiags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/"+url.PathEscape(vaultID)+"/approvers/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this vault approver, then retry the update.")
 		return
 	}
 

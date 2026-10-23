@@ -43,6 +43,9 @@ func (c Client) groupServiceAccountMembershipRequest(method, groupID, serviceAcc
 	if method != http.MethodGet {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if method == http.MethodPost {
+		req.Header.Set(TerraformManagementHeader, "claim")
+	}
 	resp, err := c.RoundTrip(req)
 	if err != nil {
 		return GroupServiceAccountMembership{}, fmt.Errorf("HTTP request failed: %w", err)

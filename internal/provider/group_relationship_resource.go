@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -111,6 +112,11 @@ func (r *GroupRelationshipResource) Read(ctx context.Context, req resource.ReadR
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading group relationship from RWX", err.Error())
+		return
+	}
+	query := url.Values{"parent_group_id": {state.ParentGroupID.ValueString()}, "child_group_id": {state.ChildGroupID.ValueString()}}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/group_relationships?"+query.Encode()); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this relationship, then retry the refresh.")
 		return
 	}
 	state = groupRelationshipResourceModel(relationship)

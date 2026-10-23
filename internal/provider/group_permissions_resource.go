@@ -148,6 +148,10 @@ func (r *GroupPermissionsResource) Read(ctx context.Context, req resource.ReadRe
 		resp.Diagnostics.AddError("Error reading group permissions from RWX", err.Error())
 		return
 	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/groups/"+url.PathEscape(state.ID.ValueString())+"/permissions"); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage these group permissions, then retry the refresh.")
+		return
+	}
 	state.GroupID = state.ID
 	value, diags := permissionsModel(ctx, permissions)
 	state.Permissions = value
@@ -183,7 +187,7 @@ func (r *GroupPermissionsResource) Delete(ctx context.Context, req resource.Dele
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if _, err := r.client.ReplaceGroupPermissions(state.ID.ValueString(), []api.Permission{}); err != nil && !errors.Is(err, api.ErrNotFound) {
+	if err := r.client.ClearGroupPermissions(state.ID.ValueString()); err != nil && !errors.Is(err, api.ErrNotFound) {
 		resp.Diagnostics.AddError("Error clearing group permissions in RWX", err.Error())
 	}
 }

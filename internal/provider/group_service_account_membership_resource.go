@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -105,6 +106,11 @@ func (r *GroupServiceAccountMembershipResource) Read(ctx context.Context, req re
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading group service account membership from RWX", err.Error())
+		return
+	}
+	query := url.Values{"group_id": {state.GroupID.ValueString()}, "service_account_id": {state.ServiceAccountID.ValueString()}}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/group_service_account_memberships?"+query.Encode()); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this membership, then retry the refresh.")
 		return
 	}
 	state = groupServiceAccountMembershipResourceModel(membership)

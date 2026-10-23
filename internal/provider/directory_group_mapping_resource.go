@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -253,6 +254,10 @@ func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.R
 	}
 	if result.Mapping == nil {
 		resp.Diagnostics.AddError("Error reading directory group mapping from RWX", "RWX returned no mapping.")
+		return
+	}
+	if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/directory_group_mappings/"+url.PathEscape(state.ID.ValueString())); err != nil {
+		resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this directory group mapping, then retry the refresh.")
 		return
 	}
 	state.setMapping(result)

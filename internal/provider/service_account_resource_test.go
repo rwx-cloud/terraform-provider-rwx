@@ -24,11 +24,15 @@ type serviceAccountBackend struct {
 	statusMethod string
 	lookupCount  int
 	secondPage   bool
+	claims       int
 }
 
 func (b *serviceAccountBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if req.Method == http.MethodGet && req.Header.Get(api.TerraformManagementHeader) != "" {
+		return nil, fmt.Errorf("GET carried management intent")
+	}
 	if req.Header.Get("Authorization") != "Bearer service-account-test-token" {
 		return nil, fmt.Errorf("missing bearer authentication")
 	}
@@ -37,6 +41,9 @@ func (b *serviceAccountBackend) RoundTrip(req *http.Request) (*http.Response, er
 	if b.status != 0 && (b.statusMethod == "" || b.statusMethod == req.Method) {
 		status = b.status
 		result = map[string]any{"errors": []string{"guarded failure"}}
+	} else if req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/terraform_management") {
+		b.claims++
+		status = http.StatusNoContent
 	} else if req.Method == http.MethodGet && req.URL.Path == "/mint/api/service_accounts" {
 		matches := []api.ServiceAccount{}
 		var cursor *string
@@ -205,6 +212,9 @@ func TestServiceAccountLookup(t *testing.T) {
 					resource.TestCheckResourceAttr("data.rwx_service_account.test", "display_name", "Deploy automation"),
 				)},
 			}})
+			if backend.claims != 0 {
+				t.Fatal("data-source lookup claimed service-account management")
+			}
 		})
 	}
 }

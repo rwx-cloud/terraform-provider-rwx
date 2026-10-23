@@ -156,6 +156,7 @@ func (c Client) writeAccessGrant(method string, endpoint string, body any, expec
 		return AccessGrant{}, fmt.Errorf("unable to create new HTTP request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(TerraformManagementHeader, "claim")
 
 	return c.doAccessGrantRequest(req, expectedStatus)
 }
