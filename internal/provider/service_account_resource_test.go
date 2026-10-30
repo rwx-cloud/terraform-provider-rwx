@@ -101,7 +101,12 @@ func (b *serviceAccountBackend) RoundTrip(req *http.Request) (*http.Response, er
 			}
 			b.account.DisplayName = displayName
 			b.account.Description = description
-			result = map[string]any{"service_account": b.account}
+			account := *b.account
+			if req.Method == http.MethodPost {
+				token := fmt.Sprintf("created-token-%d", b.nextID)
+				account.Token = &token
+			}
+			result = map[string]any{"service_account": account}
 		case http.MethodGet:
 			if b.account == nil || !strings.HasSuffix(req.URL.Path, "/"+b.account.ID) {
 				status = http.StatusNotFound
@@ -161,16 +166,23 @@ func TestServiceAccountLifecycle(t *testing.T) {
 				resource.TestCheckResourceAttr("rwx_service_account.test", "key", "immutable-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "identity_id", "identity-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "description", "Initial description"),
+				resource.TestCheckResourceAttr("rwx_service_account.test", "token", "created-token-1"),
 				func(s *terraform.State) error {
 					id = s.RootModule().Resources["rwx_service_account.test"].Primary.ID
 					return nil
 				},
 			)},
 			{Config: initial, PlanOnly: true},
-			{ResourceName: "rwx_service_account.test", ImportState: true, ImportStateVerify: true},
+			{ResourceName: "rwx_service_account.test", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"token"}, ImportStateCheck: func(states []*terraform.InstanceState) error {
+				if states[0].Attributes["token"] != "" {
+					return fmt.Errorf("import exposed a token")
+				}
+				return nil
+			}},
 			{Config: initial, PlanOnly: true},
 			{Config: renamed, Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("rwx_service_account.test", "display_name", "Release automation"),
+				resource.TestCheckResourceAttr("rwx_service_account.test", "token", "created-token-1"),
 				resource.TestCheckNoResourceAttr("rwx_service_account.test", "description"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "key", "immutable-1"),
 				resource.TestCheckResourceAttr("rwx_service_account.test", "identity_id", "identity-1"),
@@ -191,12 +203,36 @@ func TestServiceAccountLifecycle(t *testing.T) {
 			}, Config: renamed, PlanOnly: true, ExpectNonEmptyPlan: true},
 			{Config: renamed},
 			{Config: renamed, PlanOnly: true},
-			{PreConfig: func() { backend.mu.Lock(); defer backend.mu.Unlock(); backend.account = nil }, Config: renamed, Check: resource.TestCheckResourceAttr("rwx_service_account.test", "id", "account-2")},
+			{PreConfig: func() { backend.mu.Lock(); defer backend.mu.Unlock(); backend.account = nil }, Config: renamed, Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("rwx_service_account.test", "id", "account-2"),
+				resource.TestCheckResourceAttr("rwx_service_account.test", "token", "created-token-2"),
+			)},
 		},
 	})
 	if backend.account != nil {
 		t.Fatal("destroy did not deactivate account")
 	}
+}
+
+func TestServiceAccountImportedToken(t *testing.T) {
+	backend := &serviceAccountBackend{account: &api.ServiceAccount{ID: "existing", IdentityID: "identity-existing", Name: "existing-key", DisplayName: "Existing account"}}
+	useServiceAccountBackend(t, backend)
+	config := serviceAccountConfig("Renamed account", "null") + `
+import {
+  to = rwx_service_account.test
+  id = "existing"
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: config, Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("rwx_service_account.test", "display_name", "Renamed account"),
+				resource.TestCheckNoResourceAttr("rwx_service_account.test", "token"),
+			)},
+			{Config: config, PlanOnly: true},
+		},
+	})
 }
 
 func TestServiceAccountLookup(t *testing.T) {

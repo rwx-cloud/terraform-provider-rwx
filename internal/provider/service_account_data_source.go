@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -24,6 +25,14 @@ func NewServiceAccountDataSource() datasource.DataSource {
 
 type ServiceAccountDataSource struct {
 	client api.Client
+}
+
+type ServiceAccountDataSourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	IdentityID  types.String `tfsdk:"identity_id"`
+	Key         types.String `tfsdk:"key"`
+	DisplayName types.String `tfsdk:"display_name"`
+	Description types.String `tfsdk:"description"`
 }
 
 func (d *ServiceAccountDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -83,7 +92,7 @@ func (d *ServiceAccountDataSource) Configure(ctx context.Context, req datasource
 }
 
 func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config ServiceAccountModel
+	var config ServiceAccountDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -99,6 +108,12 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		resp.Diagnostics.AddError("Error looking up service account in RWX", err.Error())
 		return
 	}
-	state := serviceAccountModel(account)
+	state := ServiceAccountDataSourceModel{
+		ID:          types.StringValue(account.ID),
+		IdentityID:  types.StringValue(account.IdentityID),
+		Key:         types.StringValue(account.Name),
+		DisplayName: types.StringValue(account.DisplayName),
+		Description: types.StringPointerValue(account.Description),
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

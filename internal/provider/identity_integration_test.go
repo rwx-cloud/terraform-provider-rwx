@@ -2,8 +2,11 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"testing"
 
@@ -79,6 +82,108 @@ import {
 	integrationError(t, err, api.ErrNotFound)
 	_, err = client.FindServiceAccount(immutableName)
 	integrationError(t, err, api.ErrNotFound)
+}
+
+func TestIntegrationServiceAccountToken(t *testing.T) {
+	client := integrationClient(t)
+	name := integrationName()
+	config := func(displayName string) string {
+		return providerConfig + fmt.Sprintf(`
+resource "rwx_service_account" "test" {
+  display_name = %q
+}
+output "service_account_token" {
+  value = rwx_service_account.test.token
+  sensitive = true
+}
+`, displayName)
+	}
+	var id, token string
+	host := os.Getenv("RWX_HOST")
+	if host == "" {
+		host = "cloud.rwx.com"
+	}
+	checkAuthentication := func(wantStatus int) error {
+		tokenClient, err := api.NewClient(api.Config{Host: host, AccessToken: token, Version: "test"})
+		if err != nil {
+			return err
+		}
+		req, err := http.NewRequest(http.MethodGet, "/api/auth/whoami", nil)
+		if err != nil {
+			return err
+		}
+		resp, err := tokenClient.RoundTrip(req)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != wantStatus {
+			return fmt.Errorf("created token authentication returned %d, want %d", resp.StatusCode, wantStatus)
+		}
+		if wantStatus == http.StatusOK {
+			var identity struct {
+				OrganizationSlug string `json:"organization_slug"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&identity); err != nil {
+				return err
+			}
+			if identity.OrganizationSlug != "rwx-integration-testing" {
+				return fmt.Errorf("created token authenticated to the wrong organization")
+			}
+		}
+		return nil
+	}
+	check := func(state *terraform.State) error {
+		account := state.RootModule().Resources["rwx_service_account.test"].Primary
+		currentToken := account.Attributes["token"]
+		if currentToken == "" {
+			return fmt.Errorf("Terraform did not capture the creation token")
+		}
+		if token != "" && currentToken != token {
+			return fmt.Errorf("refresh or update changed the creation token")
+		}
+		id, token = account.ID, currentToken
+		output := state.RootModule().Outputs["service_account_token"]
+		if output == nil || !output.Sensitive || output.Value != token {
+			return fmt.Errorf("Terraform output did not preserve the sensitive token reference")
+		}
+		shown, err := client.GetServiceAccount(id)
+		if err != nil {
+			return err
+		}
+		if shown.Token != nil {
+			return fmt.Errorf("show endpoint returned a token")
+		}
+		listed, err := client.ListServiceAccounts(account.Attributes["key"])
+		if err != nil {
+			return err
+		}
+		if len(listed) != 1 || listed[0].ID != id || listed[0].Token != nil {
+			return fmt.Errorf("list endpoint did not return token-free account metadata")
+		}
+		return checkAuthentication(http.StatusOK)
+	}
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy: func(*terraform.State) error {
+			if _, err := client.GetServiceAccount(id); err != api.ErrNotFound {
+				return fmt.Errorf("destroy did not deactivate the service account: %v", err)
+			}
+			return checkAuthentication(http.StatusUnauthorized)
+		},
+		Steps: []resource.TestStep{
+			{Config: config(name), Check: check},
+			{RefreshState: true, Check: check},
+			{Config: config(name + "-renamed"), Check: check},
+			{ResourceName: "rwx_service_account.test", ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"token"}, ImportStateCheck: func(states []*terraform.InstanceState) error {
+				if states[0].Attributes["token"] != "" {
+					return fmt.Errorf("import recovered a creation-only token")
+				}
+				return nil
+			}},
+			{Config: config(name + "-renamed"), PlanOnly: true, Check: check},
+		},
+	})
 }
 
 func TestIntegrationGroupRelationship(t *testing.T) {

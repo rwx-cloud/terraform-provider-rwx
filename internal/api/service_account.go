@@ -14,6 +14,7 @@ type ServiceAccount struct {
 	Name        string  `json:"name"`
 	DisplayName string  `json:"display_name"`
 	Description *string `json:"description"`
+	Token       *string `json:"token,omitempty"`
 }
 
 func (c Client) CreateServiceAccount(account ServiceAccount) (ServiceAccount, error) {
