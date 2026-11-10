@@ -215,6 +215,10 @@ func TestVaultChildReadClaimsTerraformManagement(t *testing.T) {
 				if !attributes[tc.attribute].Equal(tftypes.NewValue(tftypes.String, tc.value)) {
 					t.Fatalf("unexpected refreshed %s: %v", tc.attribute, attributes[tc.attribute])
 				}
+				canonicalID := map[string]string{"rwx_secret": "vault_id/vault-two/token", "rwx_variable": "vault_id/vault-two/region"}[tc.typeName]
+				if canonicalID != "" && !attributes["id"].Equal(tftypes.NewValue(tftypes.String, canonicalID)) {
+					t.Fatalf("unexpected canonical ID after import/refresh: %v", attributes["id"])
+				}
 				if i == 1 && (!bytes.Equal(read.NewState.MsgPack, current.MsgPack) || !bytes.Equal(read.Private, private)) {
 					t.Fatal("unchanged refresh altered state")
 				}

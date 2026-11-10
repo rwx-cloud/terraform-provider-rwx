@@ -161,6 +161,7 @@ resource "rwx_secret" "test" {
 					resource.TestStep{
 						Config: applyConfig,
 						Check: resource.ComposeAggregateTestCheckFunc(
+							resource.TestCheckResourceAttr("rwx_secret.test", "id", "vault_id/vault-123/existing-secret"),
 							resource.TestCheckResourceAttr("rwx_secret.test", "secret_value", configuredValue),
 							func(*terraform.State) error { return checkRemote(8, configuredValue) },
 						),
