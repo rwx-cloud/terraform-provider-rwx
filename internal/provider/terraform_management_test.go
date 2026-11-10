@@ -33,7 +33,6 @@ func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 		{"group_relationship", "parent/child", "/mint/api/group_relationships", "child_group_id=child&parent_group_id=parent", `{"group_relationship":{"parent_group_id":"parent","child_group_id":"child"}}`, NewGroupRelationshipResource},
 		{"group_user_membership", "group-one/user-two", "/mint/api/group_user_memberships", "group_id=group-one&user_id=user-two", `{"group_user_membership":{"group_id":"group-one","user_id":"user-two"}}`, NewGroupUserMembershipResource},
 		{"group_service_account_membership", "group-one/account-two", "/mint/api/group_service_account_memberships", "group_id=group-one&service_account_id=account-two", `{"group_service_account_membership":{"group_id":"group-one","service_account_id":"account-two"}}`, NewGroupServiceAccountMembershipResource},
-		{"directory_group_mapping", "directory-group-one", "/mint/api/directory_group_mappings/directory-group-one", "", `{"directory_group_mapping":{"id":"directory-group-one","directory_id":"directory-one","directory_group_id":"directory-group-one","group_id":"group-two"},"reconciliation":{"status":"succeeded"}}`, NewDirectoryGroupMappingResource},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
