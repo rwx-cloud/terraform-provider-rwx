@@ -29,6 +29,7 @@ var (
 )
 
 type accessGrantResource struct {
+	managementWarnings
 	client        api.Client
 	principalType string
 }
@@ -124,10 +125,11 @@ func (r *accessGrantResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *accessGrantResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -153,6 +155,7 @@ func (r *accessGrantResource) ModifyPlan(ctx context.Context, req resource.Modif
 }
 
 func (r *accessGrantResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	plan := r.readModel(ctx, &req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -191,6 +194,7 @@ func (r *accessGrantResource) Create(ctx context.Context, req resource.CreateReq
 }
 
 func (r *accessGrantResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	state := r.readModel(ctx, &req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -243,6 +247,7 @@ func (r *accessGrantResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (r *accessGrantResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	plan := r.readModel(ctx, &req.Plan, &resp.Diagnostics)
 	state := r.readModel(ctx, &req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -273,6 +278,7 @@ func (r *accessGrantResource) Update(ctx context.Context, req resource.UpdateReq
 }
 
 func (r *accessGrantResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	state := r.readModel(ctx, &req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

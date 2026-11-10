@@ -24,6 +24,7 @@ func NewUserDataSource() datasource.DataSource {
 }
 
 type UserDataSource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -70,10 +71,11 @@ func (d *UserDataSource) Configure(ctx context.Context, req datasource.Configure
 		resp.Diagnostics.AddError("Unexpected Data Source Configure Type", fmt.Sprintf("Expected api.Client, got: %T. Please report this issue to support@rwx.com.", req.ProviderData))
 		return
 	}
-	d.client = client
+	d.client = d.withWarnings(client)
 }
 
 func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	defer d.reportWarnings(&resp.Diagnostics)
 	var data UserDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {

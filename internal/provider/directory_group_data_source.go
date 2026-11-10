@@ -24,6 +24,7 @@ func NewDirectoryGroupDataSource() datasource.DataSource {
 }
 
 type DirectoryGroupDataSource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -76,10 +77,11 @@ func (d *DirectoryGroupDataSource) Configure(ctx context.Context, req datasource
 		return
 	}
 
-	d.client = client
+	d.client = d.withWarnings(client)
 }
 
 func (d *DirectoryGroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	defer d.reportWarnings(&resp.Diagnostics)
 	var data DirectoryGroupDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {

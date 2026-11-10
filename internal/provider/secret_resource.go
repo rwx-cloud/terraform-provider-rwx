@@ -34,6 +34,7 @@ func NewSecretResource() resource.Resource {
 }
 
 type SecretResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -110,10 +111,11 @@ func (r *SecretResource) Configure(ctx context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *SecretResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -141,6 +143,7 @@ func (r *SecretResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 }
 
 func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan SecretResourceModel
 
@@ -201,6 +204,7 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state SecretResourceModel
 
@@ -269,6 +273,7 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan SecretResourceModel
 	var state SecretResourceModel
@@ -329,6 +334,7 @@ func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state SecretResourceModel
 

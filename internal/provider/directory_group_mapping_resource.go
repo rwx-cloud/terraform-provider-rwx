@@ -34,6 +34,7 @@ func NewDirectoryGroupMappingResource() resource.Resource {
 }
 
 type DirectoryGroupMappingResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -110,7 +111,7 @@ func (r *DirectoryGroupMappingResource) Configure(ctx context.Context, req resou
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *DirectoryGroupMappingResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
@@ -135,6 +136,7 @@ func (r *DirectoryGroupMappingResource) ModifyPlan(ctx context.Context, req reso
 }
 
 func (r *DirectoryGroupMappingResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -150,6 +152,7 @@ func (r *DirectoryGroupMappingResource) Create(ctx context.Context, req resource
 }
 
 func (r *DirectoryGroupMappingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan DirectoryGroupMappingResourceModel
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -211,6 +214,7 @@ func (m *DirectoryGroupMappingResourceModel) setMapping(result api.DirectoryGrou
 }
 
 func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -265,6 +269,7 @@ func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.R
 }
 
 func (r *DirectoryGroupMappingResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

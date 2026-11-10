@@ -33,6 +33,7 @@ func NewVariableResource() resource.Resource {
 }
 
 type VariableResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -103,10 +104,11 @@ func (r *VariableResource) Configure(ctx context.Context, req resource.Configure
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *VariableResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -134,6 +136,7 @@ func (r *VariableResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 }
 
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan VariableResourceModel
 
@@ -191,6 +194,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 }
 
 func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state VariableResourceModel
 
@@ -247,6 +251,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan VariableResourceModel
 	var state VariableResourceModel
@@ -304,6 +309,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state VariableResourceModel
 

@@ -30,6 +30,7 @@ func NewGroupUserMembershipResource() resource.Resource {
 }
 
 type GroupUserMembershipResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -76,10 +77,11 @@ func (r *GroupUserMembershipResource) Configure(ctx context.Context, req resourc
 		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected api.Client, got: %T. Please report this issue to support@rwx.com.", req.ProviderData))
 		return
 	}
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *GroupUserMembershipResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan GroupUserMembershipResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -95,6 +97,7 @@ func (r *GroupUserMembershipResource) Create(ctx context.Context, req resource.C
 }
 
 func (r *GroupUserMembershipResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupUserMembershipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -119,10 +122,12 @@ func (r *GroupUserMembershipResource) Read(ctx context.Context, req resource.Rea
 }
 
 func (r *GroupUserMembershipResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	resp.Diagnostics.AddError("Unexpected group user membership update", "Changing either ID requires replacing the membership.")
 }
 
 func (r *GroupUserMembershipResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupUserMembershipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

@@ -29,6 +29,7 @@ func NewOIDCTokenResource() resource.Resource {
 }
 
 type OIDCTokenResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -103,10 +104,11 @@ func (r *OIDCTokenResource) Configure(ctx context.Context, req resource.Configur
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *OIDCTokenResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -134,6 +136,7 @@ func (r *OIDCTokenResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 }
 
 func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan OIDCTokenResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -175,6 +178,7 @@ func (r *OIDCTokenResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 func (r *OIDCTokenResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state OIDCTokenResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -231,6 +235,7 @@ func (r *OIDCTokenResource) Read(ctx context.Context, req resource.ReadRequest, 
 }
 
 func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan OIDCTokenResourceModel
 	var state OIDCTokenResourceModel
 
@@ -295,6 +300,7 @@ func (r *OIDCTokenResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (r *OIDCTokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state OIDCTokenResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)

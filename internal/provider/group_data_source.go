@@ -23,6 +23,7 @@ func NewGroupDataSource() datasource.DataSource {
 }
 
 type GroupDataSource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -71,10 +72,11 @@ func (d *GroupDataSource) Configure(ctx context.Context, req datasource.Configur
 		return
 	}
 
-	d.client = client
+	d.client = d.withWarnings(client)
 }
 
 func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	defer d.reportWarnings(&resp.Diagnostics)
 	var config GroupModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
