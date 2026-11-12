@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,7 +33,6 @@ func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 		{"group_relationship", "parent/child", "/mint/api/group_relationships", "child_group_id=child&parent_group_id=parent", `{"group_relationship":{"parent_group_id":"parent","child_group_id":"child"}}`, NewGroupRelationshipResource},
 		{"group_user_membership", "group-one/user-two", "/mint/api/group_user_memberships", "group_id=group-one&user_id=user-two", `{"group_user_membership":{"group_id":"group-one","user_id":"user-two"}}`, NewGroupUserMembershipResource},
 		{"group_service_account_membership", "group-one/account-two", "/mint/api/group_service_account_memberships", "group_id=group-one&service_account_id=account-two", `{"group_service_account_membership":{"group_id":"group-one","service_account_id":"account-two"}}`, NewGroupServiceAccountMembershipResource},
-		{"directory_group_mapping", "directory-group-one", "/mint/api/directory_group_mappings/directory-group-one", "", `{"directory_group_mapping":{"id":"directory-group-one","directory_id":"directory-one","directory_group_id":"directory-group-one","group_id":"group-two"},"reconciliation":{"status":"succeeded"}}`, NewDirectoryGroupMappingResource},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 						default:
 							t.Fatalf("unexpected request: %s %s", req.Method, req.URL)
 						}
-						return &http.Response{StatusCode: code, Status: http.StatusText(code), Body: io.NopCloser(strings.NewReader(body))}, nil
+						return &http.Response{StatusCode: code, Status: http.StatusText(code), Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{"X-Rwx-Iac-Warning": {`{"source":"pulumi"}`}}}, nil
 					}}
 					r := tc.makeResource()
 					var configured resource.ConfigureResponse
@@ -85,6 +85,9 @@ func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 					if response.Diagnostics.HasError() || diags.HasError() || !claimed || id != tc.id {
 						t.Fatalf("Read did not claim imported resource: claimed=%t id=%s diagnostics=%v %v", claimed, id, response.Diagnostics, diags)
 					}
+					if response.Diagnostics.WarningsCount() != 1 || !strings.Contains(response.Diagnostics[0].Detail(), "pulumi") {
+						t.Fatalf("different-tool attribution must warn and proceed: %v", response.Diagnostics)
+					}
 					claimed = false
 					again := resource.ReadResponse{State: response.State}
 					r.Read(ctx, resource.ReadRequest{State: response.State}, &again)
@@ -98,6 +101,74 @@ func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 						t.Fatalf("missing resource retained state: %v", absent.Diagnostics)
 					}
 				})
+			}
+		})
+	}
+}
+
+func TestResourceManagementWarnings(t *testing.T) {
+	const pulumiWarning = "RWX attributes this resource to pulumi. Authorized operations still proceed; changes made by another tool may overwrite this resource."
+	const terraformWarning = "RWX attributes this resource to terraform. Authorized operations still proceed; changes made by another tool may overwrite this resource."
+	const unreadableWarning = "RWX returned a warning that this provider could not decode."
+	for _, tc := range []struct {
+		name, header string
+		details      []string
+	}{
+		{"Cloud messages", `["Cloud owns this wording.","A future warning kind: retry after approval."]`, []string{"Cloud owns this wording.", "A future warning kind: retry after approval."}},
+		{"Cloud duplicates", `["first","second","first"]`, []string{"first", "second"}},
+		{"Cloud exact wording", `["  Keep spaces and \"quotes\".  ",""," "]`, []string{"  Keep spaces and \"quotes\".  "}},
+		{"Cloud empty", `[]`, nil},
+		{"legacy", `{"source":"pulumi"}`, []string{pulumiWarning}},
+		{"distinct owners", `{"source":"pulumi","sources":["pulumi","terraform"]}`, []string{pulumiWarning, terraformWarning}},
+		{"duplicates", `{"source":"terraform","sources":["pulumi","terraform","pulumi"]}`, []string{pulumiWarning, terraformWarning}},
+		{"unknown owner", `{"source":"other"}`, []string{unreadableWarning}},
+		{"malformed", `not json`, []string{unreadableWarning}},
+		{"malformed array", `["partial message",123]`, []string{unreadableWarning}},
+		{"null element", `["partial message",null]`, []string{unreadableWarning}},
+		{"null", `null`, []string{unreadableWarning}},
+		{"blank header", " \t ", nil},
+		{"no warning", "", nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			header := tc.header
+			client := api.Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+				code, body := 204, ""
+				if req.Method == http.MethodGet {
+					code, body = 200, `{"group":{"id":"group-one","name":"Deployers"}}`
+				}
+				return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{"X-Rwx-Iac-Warning": {header}}}, nil
+			}}
+			r := NewGroupResource()
+			var configured resource.ConfigureResponse
+			r.(resource.ResourceWithConfigure).Configure(ctx, resource.ConfigureRequest{ProviderData: client}, &configured)
+			var schema resource.SchemaResponse
+			r.Schema(ctx, resource.SchemaRequest{}, &schema)
+			imported := resource.ImportStateResponse{State: tfsdk.State{Schema: schema.Schema, Raw: tftypes.NewValue(schema.Schema.Type().TerraformType(ctx), nil)}}
+			r.(resource.ResourceWithImportState).ImportState(ctx, resource.ImportStateRequest{ID: "group-one"}, &imported)
+			read := resource.ReadResponse{State: imported.State}
+			r.Read(ctx, resource.ReadRequest{State: imported.State}, &read)
+			deleted := resource.DeleteResponse{State: read.State}
+			r.Delete(ctx, resource.DeleteRequest{State: read.State}, &deleted)
+			for _, diagnostics := range []diag.Diagnostics{read.Diagnostics, deleted.Diagnostics} {
+				if diagnostics.HasError() || diagnostics.WarningsCount() != len(tc.details) {
+					t.Fatalf("expected nonblocking warnings for %v: %v", tc.details, diagnostics)
+				}
+				for _, detail := range tc.details {
+					found := false
+					for _, diagnostic := range diagnostics {
+						found = found || (diagnostic.Summary() == "RWX warning" && diagnostic.Detail() == detail)
+					}
+					if !found {
+						t.Fatalf("missing exact Cloud warning %q: %v", detail, diagnostics)
+					}
+				}
+			}
+			header = ""
+			again := resource.DeleteResponse{State: read.State}
+			r.Delete(ctx, resource.DeleteRequest{State: read.State}, &again)
+			if len(again.Diagnostics) != 0 {
+				t.Fatalf("warning leaked into another RPC: %v", again.Diagnostics)
 			}
 		})
 	}
@@ -122,8 +193,11 @@ func TestVaultChildReadClaimsTerraformManagement(t *testing.T) {
 			mutations := 0
 			wrongPrincipal := false
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				if (req.Method == http.MethodGet || strings.HasSuffix(req.URL.Path, "/terraform_management")) && req.Header.Get(api.TerraformManagementHeader) != "" {
-					t.Errorf("unexpected mutation intent on %s %s", req.Method, req.URL)
+				if req.Method == http.MethodGet && req.Header.Get(api.TerraformManagementHeader) != "claim" {
+					t.Errorf("missing read-only tool identity on %s", req.URL)
+				}
+				if strings.HasSuffix(req.URL.Path, "/terraform_management") && req.Header.Get(api.TerraformManagementHeader) != "" {
+					t.Errorf("unexpected explicit intent on legacy claim POST %s", req.URL)
 				}
 				switch {
 				case req.Method == http.MethodGet && req.URL.Path == "/mint/api/vaults":
@@ -214,6 +288,10 @@ func TestVaultChildReadClaimsTerraformManagement(t *testing.T) {
 				}
 				if !attributes[tc.attribute].Equal(tftypes.NewValue(tftypes.String, tc.value)) {
 					t.Fatalf("unexpected refreshed %s: %v", tc.attribute, attributes[tc.attribute])
+				}
+				canonicalID := map[string]string{"rwx_secret": "vault_id/vault-two/token", "rwx_variable": "vault_id/vault-two/region"}[tc.typeName]
+				if canonicalID != "" && !attributes["id"].Equal(tftypes.NewValue(tftypes.String, canonicalID)) {
+					t.Fatalf("unexpected canonical ID after import/refresh: %v", attributes["id"])
 				}
 				if i == 1 && (!bytes.Equal(read.NewState.MsgPack, current.MsgPack) || !bytes.Equal(read.Private, private)) {
 					t.Fatal("unchanged refresh altered state")

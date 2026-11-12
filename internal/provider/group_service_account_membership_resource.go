@@ -29,6 +29,7 @@ func NewGroupServiceAccountMembershipResource() resource.Resource {
 }
 
 type GroupServiceAccountMembershipResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -75,10 +76,11 @@ func (r *GroupServiceAccountMembershipResource) Configure(ctx context.Context, r
 		resp.Diagnostics.AddError("Unexpected Resource Configure Type", fmt.Sprintf("Expected api.Client, got: %T. Please report this issue to support@rwx.com.", req.ProviderData))
 		return
 	}
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *GroupServiceAccountMembershipResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan GroupServiceAccountMembershipResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -94,6 +96,7 @@ func (r *GroupServiceAccountMembershipResource) Create(ctx context.Context, req 
 }
 
 func (r *GroupServiceAccountMembershipResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupServiceAccountMembershipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -118,10 +121,12 @@ func (r *GroupServiceAccountMembershipResource) Read(ctx context.Context, req re
 }
 
 func (r *GroupServiceAccountMembershipResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	resp.Diagnostics.AddError("Unexpected group service account membership update", "Changing either ID requires replacing the membership.")
 }
 
 func (r *GroupServiceAccountMembershipResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupServiceAccountMembershipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

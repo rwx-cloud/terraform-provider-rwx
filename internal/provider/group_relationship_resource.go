@@ -30,6 +30,7 @@ func NewGroupRelationshipResource() resource.Resource {
 }
 
 type GroupRelationshipResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -81,10 +82,11 @@ func (r *GroupRelationshipResource) Configure(ctx context.Context, req resource.
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *GroupRelationshipResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan GroupRelationshipResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -100,6 +102,7 @@ func (r *GroupRelationshipResource) Create(ctx context.Context, req resource.Cre
 }
 
 func (r *GroupRelationshipResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupRelationshipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -124,10 +127,12 @@ func (r *GroupRelationshipResource) Read(ctx context.Context, req resource.ReadR
 }
 
 func (r *GroupRelationshipResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	resp.Diagnostics.AddError("Unexpected group relationship update", "Changing either group ID requires replacing the relationship.")
 }
 
 func (r *GroupRelationshipResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupRelationshipResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

@@ -30,6 +30,7 @@ func NewVaultServiceAccountAttachmentResource() resource.Resource {
 }
 
 type VaultServiceAccountAttachmentResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -95,10 +96,11 @@ func (r *VaultServiceAccountAttachmentResource) Configure(ctx context.Context, r
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *VaultServiceAccountAttachmentResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -126,6 +128,7 @@ func (r *VaultServiceAccountAttachmentResource) ModifyPlan(ctx context.Context, 
 }
 
 func (r *VaultServiceAccountAttachmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultServiceAccountAttachmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -155,6 +158,7 @@ func (r *VaultServiceAccountAttachmentResource) Create(ctx context.Context, req 
 }
 
 func (r *VaultServiceAccountAttachmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultServiceAccountAttachmentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -200,6 +204,7 @@ func (r *VaultServiceAccountAttachmentResource) Read(ctx context.Context, req re
 }
 
 func (r *VaultServiceAccountAttachmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultServiceAccountAttachmentResourceModel
 	var state VaultServiceAccountAttachmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -237,6 +242,7 @@ func (r *VaultServiceAccountAttachmentResource) Update(ctx context.Context, req 
 }
 
 func (r *VaultServiceAccountAttachmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultServiceAccountAttachmentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

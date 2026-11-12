@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 )
@@ -78,7 +82,11 @@ func (b *mappingBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.Method == http.MethodGet {
 		mapping, ok := b.mappings[id]
 		if !ok {
-			return respond(404, map[string][]string{"errors": {"not found"}})
+			completion, exists := b.completions[id]
+			if !exists {
+				return respond(404, map[string][]string{"errors": {"not found"}})
+			}
+			return respond(404, api.DirectoryGroupMappingResponse{Reconciliation: completion})
 		}
 		return respond(200, api.DirectoryGroupMappingResponse{Mapping: &mapping, Reconciliation: b.completions[id]})
 	}
@@ -349,4 +357,162 @@ func TestDirectoryGroupMappingInvalidTimeout(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: testAccProtoV6ProviderFactories, Steps: []resource.TestStep{
 		{Config: mappingConfig("source-a", "target-a", "0s"), PlanOnly: true, ExpectError: regexp.MustCompile("must be a positive duration")},
 	}})
+}
+
+func TestDirectoryGroupMappingRemovalRecovery(t *testing.T) {
+	for _, tc := range []struct {
+		name, showBody string
+		status         int
+		removed        bool
+		wantError      bool
+	}{
+		{"completed removal", `{"errors":["The directory group mapping was not found."],"directory_group_mapping":null,"reconciliation":{"status":"succeeded"}}`, 404, true, false},
+		{"already absent", `{"directory_group_mapping":null,"reconciliation":{"status":"succeeded"}}`, 404, true, false},
+		{"pending removal", `{"directory_group_mapping":null,"reconciliation":{"reconciliation_id":"remove-new","status":"pending"}}`, 404, false, false},
+		{"failed removal", `{"directory_group_mapping":null,"reconciliation":{"reconciliation_id":"remove-new","status":"failed"}}`, 404, false, false},
+		{"obsolete reconciliation", `{"directory_group_mapping":null,"reconciliation":{"status":"unknown"}}`, 404, false, false},
+		{"missing status", `{"directory_group_mapping":null}`, 404, false, true},
+		{"old Cloud response", `{"reconciliation":{"status":"succeeded"}}`, 404, false, true},
+		{"inactive or remapped source", `{"directory_group_mapping":{"id":"source-a","directory_id":"directory-a","directory_group_id":"source-a","group_id":"target-b"},"reconciliation":{"status":"succeeded"}}`, 200, false, false},
+		{"claim denied", `{"directory_group_mapping":{"id":"source-a","directory_id":"directory-a","directory_group_id":"source-a","group_id":"target-b"},"reconciliation":{"status":"succeeded"}}`, 200, false, true},
+		{"null mapping on success", `{"directory_group_mapping":null,"reconciliation":{"status":"succeeded"}}`, 200, false, true},
+		{"contradictory absence", `{"directory_group_mapping":{"id":"source-a"},"reconciliation":{"status":"succeeded"}}`, 404, false, true},
+		{"missing source", `{"errors":["The directory group mapping was not found."]}`, 404, false, true},
+		{"malformed response", `not json`, 404, false, true},
+		{"authority lost", `{}`, 403, false, true},
+		{"unavailable status", `{}`, 500, false, true},
+	} {
+		for _, terraformVersion := range []string{"1.10.4", "1.5.0+pulumi-terraform-bridge.extra"} {
+			for _, operation := range []string{"refresh", "refresh with saved removal", "delete"} {
+				t.Run(terraformVersion+"/"+tc.name+"/"+operation, func(t *testing.T) {
+					ctx := context.Background()
+					loseDelete := operation == "refresh with saved removal"
+					previousClient := http.DefaultClient
+					http.DefaultClient = &http.Client{Transport: directoryGroupTransport(func(req *http.Request) (*http.Response, error) {
+						status, body := tc.status, tc.showBody
+						switch {
+						case req.Method == http.MethodDelete:
+							if loseDelete {
+								return nil, fmt.Errorf("response lost after removal")
+							}
+							status, body = 202, `{"reconciliation":{"reconciliation_id":"accepted-remove","status":"pending"}}`
+							if tc.name == "already absent" {
+								status, body = 404, `{}`
+							}
+						case strings.HasSuffix(req.URL.Path, "/reconciliation"):
+							status, body = 200, `{"reconciliation":{"reconciliation_id":"accepted-remove","status":"succeeded"}}`
+						case req.Method == http.MethodPost:
+							status, body = 204, ""
+							if tc.name == "claim denied" {
+								status, body = 403, `{"errors":["group:manage denied"]}`
+							}
+						}
+						return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body))}, nil
+					})}
+					defer func() { http.DefaultClient = previousClient }()
+					protocol := providerserver.NewProtocol6(New("test")())()
+					schema, err := protocol.GetProviderSchema(ctx, &tfprotov6.GetProviderSchemaRequest{})
+					if err != nil {
+						t.Fatal(err)
+					}
+					config, err := tfprotov6.NewDynamicValue(schema.Provider.ValueType(), tftypes.NewValue(schema.Provider.ValueType(), map[string]tftypes.Value{
+						"host": tftypes.NewValue(tftypes.String, "mapping.test"), "access_token": tftypes.NewValue(tftypes.String, "fixture"),
+					}))
+					if err != nil {
+						t.Fatal(err)
+					}
+					configured, err := protocol.ConfigureProvider(ctx, &tfprotov6.ConfigureProviderRequest{Config: &config, TerraformVersion: terraformVersion})
+					if err != nil || len(configured.Diagnostics) != 0 {
+						t.Fatalf("configure: %v %v", err, configured)
+					}
+					typeName := "rwx_directory_group_mapping"
+					resourceType := schema.ResourceSchemas[typeName].ValueType()
+					current, err := tfprotov6.NewDynamicValue(resourceType, tftypes.NewValue(resourceType, map[string]tftypes.Value{
+						"id": tftypes.NewValue(tftypes.String, "source-a"), "directory_id": tftypes.NewValue(tftypes.String, "directory-a"),
+						"directory_group_id": tftypes.NewValue(tftypes.String, "source-a"), "group_id": tftypes.NewValue(tftypes.String, "target-a"),
+						"reconciliation_status": tftypes.NewValue(tftypes.String, "succeeded"), "reconciliation_timeout": tftypes.NewValue(tftypes.String, "1s"),
+					}))
+					if err != nil {
+						t.Fatal(err)
+					}
+					absent, err := tfprotov6.NewDynamicValue(resourceType, tftypes.NewValue(resourceType, nil))
+					if err != nil {
+						t.Fatal(err)
+					}
+					var private []byte
+					if loseDelete {
+						failed, err := protocol.ApplyResourceChange(ctx, &tfprotov6.ApplyResourceChangeRequest{TypeName: typeName, PriorState: &current, PlannedState: &absent, Config: &absent})
+						if err != nil || len(failed.Diagnostics) == 0 || len(failed.Private) == 0 {
+							t.Fatalf("lost DELETE response did not retain removal metadata: %v %v", failed, err)
+						}
+						retained, err := failed.NewState.Unmarshal(resourceType)
+						if err != nil || retained.IsNull() {
+							t.Fatalf("lost DELETE response discarded ownership: %v %v", retained, err)
+						}
+						private = failed.Private
+						loseDelete = false
+					}
+					if strings.HasPrefix(operation, "refresh") {
+						read, err := protocol.ReadResource(ctx, &tfprotov6.ReadResourceRequest{TypeName: typeName, CurrentState: &current, Private: private})
+						if err != nil {
+							t.Fatal(err)
+						}
+						value, err := read.NewState.Unmarshal(resourceType)
+						if err != nil || value.IsNull() != tc.removed {
+							t.Fatalf("removed=%t state=%v error=%v", tc.removed, value, err)
+						}
+						hasError := false
+						for _, diagnostic := range read.Diagnostics {
+							hasError = hasError || diagnostic.Severity == tfprotov6.DiagnosticSeverityError
+						}
+						if hasError != tc.wantError {
+							t.Fatalf("unexpected diagnostics: %v", read.Diagnostics)
+						}
+						if !tc.removed && !tc.wantError {
+							var privateData map[string][]byte
+							if len(read.Private) != 0 {
+								if err := json.Unmarshal(read.Private, &privateData); err != nil {
+									t.Fatal(err)
+								}
+							}
+							if tc.status == 200 {
+								if len(privateData["removal"]) != 0 {
+									t.Fatal("mapped refresh retained stale removal metadata")
+								}
+							} else {
+								var completion api.DirectoryGroupMappingReconciliation
+								if err := json.Unmarshal(privateData["removal"], &completion); err != nil {
+									t.Fatal(err)
+								}
+								wantStatus := map[string]string{"pending removal": "pending", "failed removal": "failed", "obsolete reconciliation": "unknown"}[tc.name]
+								wantID := ""
+								if wantStatus != "unknown" {
+									wantID = "remove-new"
+								}
+								if completion.Status != wantStatus || completion.ID != wantID {
+									t.Fatalf("removal metadata used earlier poll instead of current SHOW: %+v", completion)
+								}
+							}
+						}
+					} else {
+						deleted, err := protocol.ApplyResourceChange(ctx, &tfprotov6.ApplyResourceChangeRequest{TypeName: typeName, PriorState: &current, PlannedState: &absent, Config: &absent})
+						if err != nil {
+							t.Fatal(err)
+						}
+						value, err := deleted.NewState.Unmarshal(resourceType)
+						if err != nil || value.IsNull() != tc.removed {
+							t.Fatalf("removed=%t state=%v error=%v", tc.removed, value, err)
+						}
+						hasError := false
+						for _, diagnostic := range deleted.Diagnostics {
+							hasError = hasError || diagnostic.Severity == tfprotov6.DiagnosticSeverityError
+						}
+						if hasError == tc.removed {
+							t.Fatalf("unexpected diagnostics: %v", deleted.Diagnostics)
+						}
+					}
+				})
+			}
+		}
+	}
 }

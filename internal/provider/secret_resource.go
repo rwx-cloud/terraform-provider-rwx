@@ -34,11 +34,13 @@ func NewSecretResource() resource.Resource {
 }
 
 type SecretResource struct {
+	managementWarnings
 	client api.Client
 }
 
 // SecretResourceModel describes the resource data model.
 type SecretResourceModel struct {
+	ID          types.String `tfsdk:"id"`
 	Vault       types.String `tfsdk:"vault"`
 	VaultID     types.String `tfsdk:"vault_id"`
 	Name        types.String `tfsdk:"name"`
@@ -55,6 +57,10 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 		Description:         "Manages a secret stored in an RWX vault.",
 		MarkdownDescription: "Manages a secret stored in an RWX vault. Learn more about [secrets](https://www.rwx.com/docs/secrets).",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The canonical identity: vault_id/<immutable vault ID>/<secret name>.",
+				Computed:    true,
+			},
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this secret."),
 			"vault_id": vaultIDAttribute(
 				"The stable ID of the RWX vault that should hold this secret. Reference `rwx_vault.<name>.id` for managed vaults.",
@@ -105,10 +111,11 @@ func (r *SecretResource) Configure(ctx context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *SecretResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -136,6 +143,7 @@ func (r *SecretResource) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 }
 
 func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan SecretResourceModel
 
@@ -191,10 +199,12 @@ func (r *SecretResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
+	plan.ID = types.StringValue("vault_id/" + vaultID + "/" + plan.Name.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state SecretResourceModel
 
@@ -258,10 +268,12 @@ func (r *SecretResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
+	state.ID = types.StringValue("vault_id/" + vaultID + "/" + state.Name.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan SecretResourceModel
 	var state SecretResourceModel
@@ -290,6 +302,7 @@ func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
+	plan.ID = types.StringValue("vault_id/" + vaultID + "/" + plan.Name.ValueString())
 	if state.SecretValue.Equal(plan.SecretValue) && state.Description.Equal(plan.Description) {
 		if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/secrets/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
 			resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this secret, then retry the update.")
@@ -321,6 +334,7 @@ func (r *SecretResource) Update(ctx context.Context, req resource.UpdateRequest,
 }
 
 func (r *SecretResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state SecretResourceModel
 

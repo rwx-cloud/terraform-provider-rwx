@@ -33,11 +33,13 @@ func NewVariableResource() resource.Resource {
 }
 
 type VariableResource struct {
+	managementWarnings
 	client api.Client
 }
 
 // VariableResourceModel describes the resource data model.
 type VariableResourceModel struct {
+	ID      types.String `tfsdk:"id"`
 	Vault   types.String `tfsdk:"vault"`
 	VaultID types.String `tfsdk:"vault_id"`
 	Name    types.String `tfsdk:"name"`
@@ -53,6 +55,10 @@ func (r *VariableResource) Schema(ctx context.Context, req resource.SchemaReques
 		Description:         "Manages a non-secret variable stored in an RWX vault.",
 		MarkdownDescription: "Manages a non-secret variable stored in an RWX vault. Learn more about [vars](https://www.rwx.com/docs/vars).",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The canonical identity: vault_id/<immutable vault ID>/<variable name>.",
+				Computed:    true,
+			},
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this variable."),
 			"vault_id": vaultIDAttribute(
 				"The stable ID of the RWX vault that should hold this variable. Reference `rwx_vault.<name>.id` for managed vaults.",
@@ -98,10 +104,11 @@ func (r *VariableResource) Configure(ctx context.Context, req resource.Configure
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *VariableResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -129,6 +136,7 @@ func (r *VariableResource) ModifyPlan(ctx context.Context, req resource.ModifyPl
 }
 
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan VariableResourceModel
 
@@ -181,10 +189,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
+	plan.ID = types.StringValue("vault_id/" + vaultID + "/" + plan.Name.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state VariableResourceModel
 
@@ -236,10 +246,12 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
+	state.ID = types.StringValue("vault_id/" + vaultID + "/" + state.Name.ValueString())
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var plan VariableResourceModel
 	var state VariableResourceModel
@@ -268,6 +280,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "vault_id", encodedVaultID)...)
 
+	plan.ID = types.StringValue("vault_id/" + vaultID + "/" + plan.Name.ValueString())
 	if state.Value.Equal(plan.Value) {
 		if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/vaults/vars/"+url.PathEscape(state.Name.ValueString())+"?vault_id="+url.QueryEscape(vaultID)); err != nil {
 			resp.Diagnostics.AddError("Error claiming Terraform management", err.Error()+". Verify that the access token can manage this variable, then retry the update.")
@@ -296,6 +309,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 }
 
 func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var err error
 	var state VariableResourceModel
 

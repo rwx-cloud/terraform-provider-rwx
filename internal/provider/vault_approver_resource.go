@@ -30,6 +30,7 @@ func NewVaultApproverResource() resource.Resource {
 }
 
 type VaultApproverResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -90,10 +91,11 @@ func (r *VaultApproverResource) Configure(ctx context.Context, req resource.Conf
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *VaultApproverResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
@@ -121,6 +123,7 @@ func (r *VaultApproverResource) ModifyPlan(ctx context.Context, req resource.Mod
 }
 
 func (r *VaultApproverResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultApproverResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -150,6 +153,7 @@ func (r *VaultApproverResource) Create(ctx context.Context, req resource.CreateR
 }
 
 func (r *VaultApproverResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultApproverResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -195,6 +199,7 @@ func (r *VaultApproverResource) Read(ctx context.Context, req resource.ReadReque
 }
 
 func (r *VaultApproverResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultApproverResourceModel
 	var state VaultApproverResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -232,6 +237,7 @@ func (r *VaultApproverResource) Update(ctx context.Context, req resource.UpdateR
 }
 
 func (r *VaultApproverResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultApproverResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

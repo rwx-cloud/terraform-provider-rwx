@@ -34,6 +34,7 @@ func NewDirectoryGroupMappingResource() resource.Resource {
 }
 
 type DirectoryGroupMappingResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -110,7 +111,7 @@ func (r *DirectoryGroupMappingResource) Configure(ctx context.Context, req resou
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *DirectoryGroupMappingResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
@@ -135,6 +136,7 @@ func (r *DirectoryGroupMappingResource) ModifyPlan(ctx context.Context, req reso
 }
 
 func (r *DirectoryGroupMappingResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -150,6 +152,7 @@ func (r *DirectoryGroupMappingResource) Create(ctx context.Context, req resource
 }
 
 func (r *DirectoryGroupMappingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan DirectoryGroupMappingResourceModel
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -211,6 +214,7 @@ func (m *DirectoryGroupMappingResourceModel) setMapping(result api.DirectoryGrou
 }
 
 func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -221,21 +225,7 @@ func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.R
 	}
 	result, err := r.client.GetDirectoryGroupMapping(ctx, state.ID.ValueString())
 	if errors.Is(err, api.ErrNotFound) {
-		removal, diags := req.Private.GetKey(ctx, "removal")
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(removal) == 0 {
-			resp.State.RemoveResource(ctx)
-			return
-		}
-		var previous api.DirectoryGroupMappingReconciliation
-		if err := json.Unmarshal(removal, &previous); err != nil {
-			resp.Diagnostics.AddError("Invalid mapping removal state", err.Error())
-			return
-		}
-		completion, pollErr := r.client.GetDirectoryGroupMappingReconciliation(ctx, state.ID.ValueString(), previous.ID)
+		completion, pollErr := mappingRemovalStatus(result, err)
 		if pollErr != nil {
 			resp.Diagnostics.AddError("Error reading mapping removal from RWX", pollErr.Error())
 			return
@@ -244,6 +234,12 @@ func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.R
 			resp.State.RemoveResource(ctx)
 			return
 		}
+		encoded, err := json.Marshal(completion)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid mapping removal state", err.Error())
+			return
+		}
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, "removal", encoded)...)
 		state.ReconciliationStatus = types.StringValue(completion.Status)
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 		return
@@ -261,10 +257,25 @@ func (r *DirectoryGroupMappingResource) Read(ctx context.Context, req resource.R
 		return
 	}
 	state.setMapping(result)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, "removal", nil)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
+func mappingRemovalStatus(result api.DirectoryGroupMappingResponse, err error) (api.DirectoryGroupMappingReconciliation, error) {
+	if err != nil && !errors.Is(err, api.ErrNotFound) {
+		return result.Reconciliation, err
+	}
+	if !errors.Is(err, api.ErrNotFound) || !result.MappingKnown || result.Mapping != nil {
+		return result.Reconciliation, fmt.Errorf("RWX did not confirm that the source is unmapped; retaining state until removal can be verified")
+	}
+	if result.Reconciliation.Status == "" {
+		return result.Reconciliation, fmt.Errorf("RWX returned no reconciliation status; retaining state until removal can be verified")
+	}
+	return result.Reconciliation, nil
+}
+
 func (r *DirectoryGroupMappingResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state DirectoryGroupMappingResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -279,7 +290,8 @@ func (r *DirectoryGroupMappingResource) Delete(ctx context.Context, req resource
 	defer cancel()
 	result, err := r.client.DeleteDirectoryGroupMapping(ctx, state.ID.ValueString())
 	if errors.Is(err, api.ErrNotFound) {
-		return
+		result, err = r.client.GetDirectoryGroupMapping(ctx, state.ID.ValueString())
+		result.Reconciliation, err = mappingRemovalStatus(result, err)
 	}
 	if err != nil {
 		completion, pollErr := r.client.GetDirectoryGroupMappingReconciliation(ctx, state.ID.ValueString(), "")
@@ -294,6 +306,14 @@ func (r *DirectoryGroupMappingResource) Delete(ctx context.Context, req resource
 			resp.Diagnostics.Append(resp.Private.SetKey(ctx, "removal", encoded)...)
 		}
 		_, err = r.wait(ctx, state.ID.ValueString(), result.Reconciliation)
+	}
+	if err == nil {
+		current, readErr := r.client.GetDirectoryGroupMapping(ctx, state.ID.ValueString())
+		var completion api.DirectoryGroupMappingReconciliation
+		completion, err = mappingRemovalStatus(current, readErr)
+		if err == nil && completion.Status != "succeeded" {
+			err = fmt.Errorf("membership reconciliation %s: %s; retry apply", completion.Status, completion.Error)
+		}
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error removing directory group mapping from RWX", err.Error())

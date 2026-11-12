@@ -25,6 +25,7 @@ type DirectoryGroupMappingReconciliation struct {
 type DirectoryGroupMappingResponse struct {
 	Mapping        *DirectoryGroupMapping              `json:"directory_group_mapping"`
 	Reconciliation DirectoryGroupMappingReconciliation `json:"reconciliation"`
+	MappingKnown   bool                                `json:"-"`
 }
 
 func (c Client) CreateDirectoryGroupMapping(ctx context.Context, mapping DirectoryGroupMapping) (DirectoryGroupMappingResponse, error) {
@@ -87,15 +88,30 @@ func (c Client) directoryGroupMappingRequest(ctx context.Context, method, endpoi
 		return DirectoryGroupMappingResponse{}, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode == http.StatusNotFound {
+	notFound := resp.StatusCode == http.StatusNotFound
+	if notFound && method != http.MethodGet {
 		return DirectoryGroupMappingResponse{}, ErrNotFound
 	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+	if !notFound && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		return DirectoryGroupMappingResponse{}, responseError(resp)
 	}
 	var result DirectoryGroupMappingResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var responseBody struct {
+		Mapping        json.RawMessage                     `json:"directory_group_mapping"`
+		Reconciliation DirectoryGroupMappingReconciliation `json:"reconciliation"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&responseBody); err != nil {
 		return result, fmt.Errorf("unable to decode JSON response: %w", err)
+	}
+	result.Reconciliation = responseBody.Reconciliation
+	result.MappingKnown = len(responseBody.Mapping) != 0
+	if result.MappingKnown {
+		if err := json.Unmarshal(responseBody.Mapping, &result.Mapping); err != nil {
+			return result, fmt.Errorf("unable to decode mapping: %w", err)
+		}
+	}
+	if notFound {
+		return result, ErrNotFound
 	}
 	return result, nil
 }

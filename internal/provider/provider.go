@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -103,7 +104,10 @@ func (p *RwxProvider) Configure(ctx context.Context, req provider.ConfigureReque
 		return
 	}
 
-	client, err := api.NewClient(api.Config{Host: host, AccessToken: accessToken, Version: p.version})
+	client, err := api.NewClient(api.Config{
+		Host: host, AccessToken: accessToken, Version: p.version,
+		Pulumi: strings.Contains(req.TerraformVersion, "pulumi-terraform-bridge"),
+	})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to create RWX API client",

@@ -31,6 +31,7 @@ func NewGroupPermissionsResource() resource.Resource {
 }
 
 type GroupPermissionsResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -75,10 +76,11 @@ func (r *GroupPermissionsResource) Configure(ctx context.Context, req resource.C
 		)
 		return
 	}
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *GroupPermissionsResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	if req.Plan.Raw.IsNull() {
 		return
 	}
@@ -112,6 +114,7 @@ func (r *GroupPermissionsResource) ModifyPlan(ctx context.Context, req resource.
 }
 
 func (r *GroupPermissionsResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan GroupPermissionsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -134,6 +137,7 @@ func (r *GroupPermissionsResource) Create(ctx context.Context, req resource.Crea
 }
 
 func (r *GroupPermissionsResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupPermissionsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -160,6 +164,7 @@ func (r *GroupPermissionsResource) Read(ctx context.Context, req resource.ReadRe
 }
 
 func (r *GroupPermissionsResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan GroupPermissionsModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -182,6 +187,7 @@ func (r *GroupPermissionsResource) Update(ctx context.Context, req resource.Upda
 }
 
 func (r *GroupPermissionsResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state GroupPermissionsModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

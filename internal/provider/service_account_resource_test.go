@@ -30,8 +30,8 @@ type serviceAccountBackend struct {
 func (b *serviceAccountBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if req.Method == http.MethodGet && req.Header.Get(api.TerraformManagementHeader) != "" {
-		return nil, fmt.Errorf("GET carried management intent")
+	if req.Method == http.MethodGet && req.Header.Get(api.TerraformManagementHeader) != "claim" {
+		return nil, fmt.Errorf("GET omitted read-only tool identity")
 	}
 	if req.Header.Get("Authorization") != "Bearer service-account-test-token" {
 		return nil, fmt.Errorf("missing bearer authentication")

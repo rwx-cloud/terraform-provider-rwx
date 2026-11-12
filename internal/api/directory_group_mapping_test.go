@@ -21,6 +21,16 @@ func TestDirectoryGroupMappingReadErrors(t *testing.T) {
 	}
 }
 
+func TestDirectoryGroupMappingDeleteNotFound(t *testing.T) {
+	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+		return jsonResponse(404, "not JSON"), nil
+	}}
+	_, err := client.DeleteDirectoryGroupMapping(context.Background(), "source")
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected not found without decoding the DELETE body: %v", err)
+	}
+}
+
 func TestDirectoryGroupMappingPollQuery(t *testing.T) {
 	client := Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
 		if req.URL.Path != "/mint/api/directory_group_mappings/source/reconciliation" || req.URL.Query().Get("reconciliation_id") != "write+1&2" {

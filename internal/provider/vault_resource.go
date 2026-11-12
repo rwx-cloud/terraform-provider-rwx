@@ -43,6 +43,7 @@ func NewVaultResource() resource.Resource {
 }
 
 type VaultResource struct {
+	managementWarnings
 	client api.Client
 }
 
@@ -160,10 +161,11 @@ func (r *VaultResource) Configure(ctx context.Context, req resource.ConfigureReq
 		return
 	}
 
-	r.client = client
+	r.client = r.withWarnings(client)
 }
 
 func (r *VaultResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -195,6 +197,7 @@ func (r *VaultResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -221,6 +224,7 @@ func (r *VaultResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var plan VaultResourceModel
 	var state VaultResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -252,6 +256,7 @@ func (r *VaultResource) Update(ctx context.Context, req resource.UpdateRequest, 
 }
 
 func (r *VaultResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
 	var state VaultResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

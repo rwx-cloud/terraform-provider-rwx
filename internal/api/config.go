@@ -6,6 +6,7 @@ type Config struct {
 	AccessToken string
 	Host        string
 	Version     string
+	Pulumi      bool
 }
 
 func (c Config) Validate() error {

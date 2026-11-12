@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Client is an API Client for RWX
@@ -26,13 +27,29 @@ func NewClient(cfg Config) (Client, error) {
 			req.URL.Host = cfg.Host
 		}
 
-		req.Header.Set("User-Agent", fmt.Sprintf("terraform-provider-rwx/%s", cfg.Version))
+		name := "terraform-provider-rwx"
+		if cfg.Pulumi {
+			name = "pulumi-rwx"
+		}
+		intent := req.Header.Get(TerraformManagementHeader)
+		if intent == "" && (req.Method == http.MethodGet || (cfg.Pulumi && req.Method == http.MethodPost && strings.HasSuffix(req.URL.Path, "/terraform_management"))) {
+			intent = "claim"
+		}
+		if intent != "" {
+			header := TerraformManagementHeader
+			if cfg.Pulumi {
+				header = "X-RWX-Pulumi-Management"
+				req.Header.Del(TerraformManagementHeader)
+			}
+			req.Header.Set(header, intent)
+		}
+		req.Header.Set("User-Agent", fmt.Sprintf("%s/%s", name, cfg.Version))
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.AccessToken))
 
 		return http.DefaultClient.Do(req)
 	}
 
-	return Client{roundTrip}, nil
+	return Client{RoundTrip: roundTrip}, nil
 }
 
 func (c Client) DeleteSecretInVault(vault VaultSelector, secret Secret) error {
