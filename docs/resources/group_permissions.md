@@ -3,14 +3,17 @@
 page_title: "rwx_group_permissions Resource - rwx"
 subcategory: ""
 description: |-
-  Manages the complete direct-permission set of an RWX group. Use only one resource per group. Apply replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set permissions = [] to clear direct assignments. Destroy clears direct permissions without deleting the group. Changing group_id replaces this resource and clears the old group's direct permissions. Planning validates known permission keys, scopes, and grantability using the RWX catalog; checks requiring unknown target or resource IDs are deferred until those IDs are known. RWX rechecks authority when applying and rejects unauthorized changes and changes to protected groups. Import by the group ID.
+  Manages the complete direct-permission set of an RWX group. Use only one resource per group. Writing this resource replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set an empty permissions list to clear direct assignments. Deleting this resource clears direct permissions without deleting the group. Changing group_id replaces this resource and clears the old group's direct permissions.
+  During planning, the provider checks known permission keys, scopes, and grantability against the RWX catalog. It defers checks that require unknown target or resource IDs until those IDs are known. RWX rechecks authority when writing permissions and rejects unauthorized changes and changes to protected groups. Import by the group ID.
   Required permissions
   The provider's access token needs group:manage on the target group for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in permissions. See permissions https://www.rwx.com/docs/permissions.
 ---
 
 # rwx_group_permissions (Resource)
 
-Manages the complete direct-permission set of an RWX group. Use only one resource per group. Apply replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set `permissions = []` to clear direct assignments. Destroy clears direct permissions without deleting the group. Changing `group_id` replaces this resource and clears the old group's direct permissions. Planning validates known permission keys, scopes, and grantability using the RWX catalog; checks requiring unknown target or resource IDs are deferred until those IDs are known. RWX rechecks authority when applying and rejects unauthorized changes and changes to protected groups. Import by the group ID.
+Manages the complete direct-permission set of an RWX group. Use only one resource per group. Writing this resource replaces all direct assignments, including changes made in the UI; inherited permissions are untouched. Set an empty permissions list to clear direct assignments. Deleting this resource clears direct permissions without deleting the group. Changing `group_id` replaces this resource and clears the old group's direct permissions.
+
+During planning, the provider checks known permission keys, scopes, and grantability against the RWX catalog. It defers checks that require unknown target or resource IDs until those IDs are known. RWX rechecks authority when writing permissions and rejects unauthorized changes and changes to protected groups. Import by the group ID.
 
 ## Required permissions
 

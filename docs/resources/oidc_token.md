@@ -3,12 +3,12 @@
 page_title: "rwx_oidc_token Resource - rwx"
 subcategory: ""
 description: |-
-  Manages an OIDC token definition stored in an RWX vault. Learn more about OIDC tokens https://www.rwx.com/docs/oidc.
+  Manages an OIDC token definition stored in an RWX vault. See OIDC tokens https://www.rwx.com/docs/oidc.
 ---
 
 # rwx_oidc_token (Resource)
 
-Manages an OIDC token definition stored in an RWX vault. Learn more about [OIDC tokens](https://www.rwx.com/docs/oidc).
+Manages an OIDC token definition stored in an RWX vault. See [OIDC tokens](https://www.rwx.com/docs/oidc).
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "rwx_oidc_token" "example" {
 ### Optional
 
 - `vault` (String) The name of the RWX vault that holds the OIDC token definition. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that holds the OIDC token definition. For a managed vault, use the ID exported by the vault resource. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 

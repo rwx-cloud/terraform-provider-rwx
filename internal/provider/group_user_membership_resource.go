@@ -46,7 +46,7 @@ func (r *GroupUserMembershipResource) Metadata(ctx context.Context, req resource
 
 func (r *GroupUserMembershipResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages one direct manual user membership in a group. Other users, inherited membership, and directory-owned membership are preserved. Import reads only the manual contribution; inherited or directory-only membership cannot be imported. Manual user membership changes are rejected in SCIM-managed organizations. Requires `group:manage` on the group to add or remove membership.",
+		MarkdownDescription: "Manages one direct manual user membership in a group. This resource preserves other users, inherited membership, and directory-owned membership. Import reads only the manual contribution; you cannot import inherited or directory-only membership. RWX rejects manual user membership changes in SCIM-managed organizations. Requires `group:manage` on the group to add or remove membership.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The membership identity, in group-id/user-id format.",
