@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 
@@ -80,6 +81,22 @@ func resolveVaultID(client api.Client, model vaultSelectorModel, previousID stri
 	}
 
 	return vault.ID, diags
+}
+
+func vaultIDForDelete(model vaultSelectorModel, previousID, id, name string) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if selector := configuredVaultSelector(model); selector.ID != "" {
+		return selector.ID, diags
+	}
+	if previousID != "" {
+		return previousID, diags
+	}
+	parts := strings.Split(id, "/")
+	if len(parts) == 3 && parts[0] == "vault_id" && parts[1] != "" && parts[2] == name && name != "" {
+		return parts[1], diags
+	}
+	diags.AddError("Cannot determine vault for deletion", "The saved state has no immutable vault identity. Verify the original vault ID and import the resource using vault_id/<vault-id>/<child-name> before retrying deletion; a vault name may have been reused.")
+	return "", diags
 }
 
 func vaultSelectorsRequireReplace(client api.Client, state vaultSelectorModel, plan vaultSelectorModel, previousID string) (bool, diag.Diagnostics) {

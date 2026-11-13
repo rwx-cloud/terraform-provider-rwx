@@ -324,7 +324,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	vaultID, selectorDiags := resolveVaultID(r.client, state.vaultSelector(), previousID)
+	vaultID, selectorDiags := vaultIDForDelete(state.vaultSelector(), previousID, state.ID.ValueString(), state.Name.ValueString())
 	resp.Diagnostics.Append(selectorDiags...)
 	if resp.Diagnostics.HasError() {
 		return
