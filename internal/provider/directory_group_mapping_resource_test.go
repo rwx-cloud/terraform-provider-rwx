@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 )
 
@@ -84,7 +85,7 @@ func (b *mappingBackend) RoundTrip(req *http.Request) (*http.Response, error) {
 		if !ok {
 			completion, exists := b.completions[id]
 			if !exists {
-				return respond(404, map[string][]string{"errors": {"not found"}})
+				completion.Status = "unknown"
 			}
 			return respond(404, api.DirectoryGroupMappingResponse{Reconciliation: completion})
 		}
@@ -252,6 +253,53 @@ func TestDirectoryGroupMappingUpdateRecovery(t *testing.T) {
 				},
 			})
 		})
+	}
+}
+
+func TestDirectoryGroupMappingSavePreflight(t *testing.T) {
+	for _, operation := range []string{"create", "update"} {
+		for _, tc := range []struct {
+			status, target string
+			writes         int
+		}{
+			{"succeeded", "target-b", 0},
+			{"pending", "target-b", 0},
+			{"failed", "target-b", 1},
+			{"unknown", "target-b", 1},
+			{"succeeded", "target-other", 1},
+		} {
+			t.Run(operation+"/"+tc.status+"/"+tc.target, func(t *testing.T) {
+				b := mappingTestBackend(t, true)
+				steps := []resource.TestStep{}
+				previousWrites := 0
+				if operation == "update" {
+					steps = append(steps, resource.TestStep{Config: mappingConfig("source-a", "target-a", "5s")})
+					previousWrites = 1
+				}
+				steps = append(steps, resource.TestStep{
+					PreConfig: func() {
+						b.mu.Lock()
+						defer b.mu.Unlock()
+						b.mappings["source-a"] = api.DirectoryGroupMapping{ID: "source-a", DirectoryID: "directory-1", DirectoryGroupID: "source-a", GroupID: tc.target}
+						b.completions["source-a"] = api.DirectoryGroupMappingReconciliation{ID: "accepted-write", Status: tc.status}
+					},
+					Config: mappingConfig("source-a", "target-b", "5s"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("rwx_directory_group_mapping.test", "group_id", "target-b"),
+						resource.TestCheckResourceAttr("rwx_directory_group_mapping.test", "reconciliation_status", "succeeded"),
+						func(_ *terraform.State) error {
+							b.mu.Lock()
+							defer b.mu.Unlock()
+							if b.writes != previousWrites+tc.writes {
+								return fmt.Errorf("saved %d writes, want %d", b.writes, previousWrites+tc.writes)
+							}
+							return nil
+						},
+					),
+				})
+				resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: testAccProtoV6ProviderFactories, Steps: steps})
+			})
+		}
 	}
 }
 

@@ -184,6 +184,29 @@ func (r *DirectoryGroupMappingResource) save(ctx context.Context, plan *Director
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	var result api.DirectoryGroupMappingResponse
+	current, readErr := r.client.GetDirectoryGroupMapping(ctx, plan.DirectoryGroupID.ValueString())
+	if readErr != nil && (!errors.Is(readErr, api.ErrNotFound) || !current.MappingKnown || current.Mapping != nil) {
+		return result, readErr
+	}
+	if readErr == nil {
+		if current.Mapping == nil {
+			return result, fmt.Errorf("RWX returned no mapping during preflight")
+		}
+		if current.Mapping.DirectoryID == plan.DirectoryID.ValueString() && current.Mapping.DirectoryGroupID == plan.DirectoryGroupID.ValueString() && current.Mapping.GroupID == plan.GroupID.ValueString() {
+			if err := r.client.ClaimTerraformManagement(ctx, "/mint/api/directory_group_mappings/"+url.PathEscape(current.Mapping.ID)); err != nil {
+				return result, fmt.Errorf("unable to authorize existing directory group mapping: %w", err)
+			}
+			if current.Reconciliation.Status == "succeeded" || current.Reconciliation.Status == "pending" {
+				plan.setMapping(current)
+				completion, err := r.wait(ctx, current.Mapping.ID, current.Reconciliation)
+				plan.ReconciliationStatus = types.StringValue(completion.Status)
+				return current, err
+			}
+			if current.Reconciliation.Status != "failed" && current.Reconciliation.Status != "unknown" {
+				return result, fmt.Errorf("unexpected reconciliation status %q during preflight", current.Reconciliation.Status)
+			}
+		}
+	}
 	if create {
 		result, err = r.client.CreateDirectoryGroupMapping(ctx, api.DirectoryGroupMapping{DirectoryID: plan.DirectoryID.ValueString(), DirectoryGroupID: plan.DirectoryGroupID.ValueString(), GroupID: plan.GroupID.ValueString()})
 	} else {
