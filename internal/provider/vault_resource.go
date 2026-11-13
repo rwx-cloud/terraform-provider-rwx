@@ -69,7 +69,7 @@ func (r *VaultResource) Metadata(ctx context.Context, req resource.MetadataReque
 func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Manages an RWX vault.",
-		MarkdownDescription: "Manages an RWX vault. Learn more about [vaults](https://www.rwx.com/docs/vaults).",
+		MarkdownDescription: "Manages an RWX vault. See [vaults](https://www.rwx.com/docs/vaults).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the vault.",

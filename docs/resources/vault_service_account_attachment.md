@@ -3,12 +3,12 @@
 page_title: "rwx_vault_service_account_attachment Resource - rwx"
 subcategory: ""
 description: |-
-  Attaches a service account to an RWX vault for task-scoped token access. Learn more about assuming a service account in a task https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task.
+  Attaches a service account to an RWX vault for task-scoped token access. See assuming a service account in a task https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task.
 ---
 
 # rwx_vault_service_account_attachment (Resource)
 
-Attaches a service account to an RWX vault for task-scoped token access. Learn more about [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).
+Attaches a service account to an RWX vault for task-scoped token access. See [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).
 
 ## Example Usage
 
@@ -47,7 +47,7 @@ resource "rwx_vault_service_account_attachment" "example" {
 
 ## Import
 
-Find the attachment ID with [`rwx vaults service-accounts list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/service-accounts/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the service-account name as the second part of the import ID:
+Run [`rwx vaults service-accounts list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/service-accounts/list) with RWX CLI v3.36.1 or later to find the attachment ID. You need `vault:manage` on the vault. Find the row matching the service-account name, then use the `ID` in the first column as the second part of the import ID:
 
 ```shell
 rwx vaults service-accounts list --vault 00000000-0000-0000-0000-000000000000

@@ -3,12 +3,12 @@
 page_title: "rwx_vault_approver Resource - rwx"
 subcategory: ""
 description: |-
-  Manages a user who can approve access to an RWX vault. Learn more about vault approvals https://www.rwx.com/docs/vaults#approvals.
+  Manages a user who can approve access to an RWX vault. See vault approvals https://www.rwx.com/docs/vaults#approvals.
 ---
 
 # rwx_vault_approver (Resource)
 
-Manages a user who can approve access to an RWX vault. Learn more about [vault approvals](https://www.rwx.com/docs/vaults#approvals).
+Manages a user who can approve access to an RWX vault. See [vault approvals](https://www.rwx.com/docs/vaults#approvals).
 
 ## Example Usage
 
@@ -42,7 +42,7 @@ resource "rwx_vault_approver" "example" {
 
 ## Import
 
-Find the approver ID with [`rwx vaults approvers list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/approvers/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the user's email as the second part of the import ID:
+Run [`rwx vaults approvers list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/approvers/list) with RWX CLI v3.36.1 or later to find the approver ID. You need `vault:manage` on the vault. Find the row matching the user's email, then use the `ID` in the first column as the second part of the import ID:
 
 ```shell
 rwx vaults approvers list --vault 00000000-0000-0000-0000-000000000000

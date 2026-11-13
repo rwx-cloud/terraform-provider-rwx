@@ -18,6 +18,6 @@ description: |-
 
 ## Import
 
-Find the approver ID with [`rwx vaults approvers list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/approvers/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the user's email as the second part of the import ID:
+Run [`rwx vaults approvers list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/approvers/list) with RWX CLI v3.36.1 or later to find the approver ID. You need `vault:manage` on the vault. Find the row matching the user's email, then use the `ID` in the first column as the second part of the import ID:
 
 {{ codefile "shell" .ImportFile }}

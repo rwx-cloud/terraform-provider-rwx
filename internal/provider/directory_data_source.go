@@ -39,7 +39,7 @@ func (d *DirectoryDataSource) Metadata(ctx context.Context, req datasource.Metad
 
 func (d *DirectoryDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. Directory rosters and mappings are not managed by this data source. Pass its ID to the [directory-group lookup](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/directory_group), then use [directory-group mapping resource](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/directory_group_mapping) to map that directory group to an RWX group.",
+		MarkdownDescription: "Looks up an existing connected directory by exact name or local RWX ID. Connect the directory in the RWX UI first. This data source does not manage directory rosters or mappings. Pass the directory ID to the [directory-group lookup](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/directory_group), then use the [directory-group mapping resource](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/resources/directory_group_mapping) to map that directory group to an RWX group.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "The stable local RWX directory ID, not the external identity-provider ID. Configure exactly one of `id` or `name`; both attributes return the resolved values.",

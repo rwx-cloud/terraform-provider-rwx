@@ -40,7 +40,7 @@ func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRe
 
 func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.",
+		MarkdownDescription: "Looks up an existing active user in the authenticated organization by email or stable RWX user ID. You can use a personal or service-account access token. If the lookup value is known during planning, the lookup runs then; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "The stable RWX user ID, not the identity ID. Configure exactly one of `id` or `email`.",
@@ -49,7 +49,7 @@ func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1), stringvalidator.ExactlyOneOf(path.MatchRoot("email"))},
 			},
 			"email": schema.StringAttribute{
-				MarkdownDescription: "The user's email. Lookup uses case-insensitive exact equality, without trimming, aliases, or fuzzy matching. Configure exactly one of `id` or `email`. Configured email casing is preserved; ID lookups return the stored email.",
+				MarkdownDescription: "The user's email. The lookup requires an exact, case-insensitive match; it does not trim whitespace, resolve aliases, or use fuzzy matching. Configure exactly one of `id` or `email`. The result preserves the configured email's casing; ID lookups return the stored email.",
 				Optional:            true,
 				Computed:            true,
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},

@@ -25,5 +25,5 @@ provider "rwx" {
 
 ### Optional
 
-- `access_token` (String, Sensitive) The access token for RWX's API. This may also be provided via the `RWX_ACCESS_TOKEN` environment variable.
-- `host` (String) The URI for RWX's API. Default: `cloud.rwx.com`. This attribute may also be provided via the `RWX_HOST` environment variable. It is usually only needed for testing or development of the provider itself.
+- `access_token` (String, Sensitive) The access token for RWX's API. You can also set it with the `RWX_ACCESS_TOKEN` environment variable.
+- `host` (String) The URI for RWX's API. Default: `cloud.rwx.com`. You can also set it with the `RWX_HOST` environment variable. You usually need to change it only when testing or developing the provider.
