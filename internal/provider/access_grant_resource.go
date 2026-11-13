@@ -75,7 +75,7 @@ func (r *accessGrantResource) Schema(ctx context.Context, req resource.SchemaReq
 	principalDescription := "The email address of the RWX user that can access the vault."
 	if r.principalType == api.AccessGrantPrincipalTypeServiceAccount {
 		principalName = "service_account"
-		principalDescription = "The service account to grant access to. Use `rwx_service_account.<name>.key` for a managed account, or look up an existing account by key or ID with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.key` attribute."
+		principalDescription = "The service account to grant access to. For a managed account, use the key exported by the service-account resource. For an existing account, use the key returned by the service-account lookup by key or ID."
 	}
 
 	resp.Schema = schema.Schema{
@@ -91,7 +91,7 @@ func (r *accessGrantResource) Schema(ctx context.Context, req resource.SchemaReq
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault to grant access to."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault to grant access to. Reference `rwx_vault.<name>.id` for managed vaults.",
+				"The stable ID of the RWX vault to grant access to. For a managed vault, use the ID exported by the vault resource.",
 			),
 			principalName: schema.StringAttribute{
 				MarkdownDescription: principalDescription,

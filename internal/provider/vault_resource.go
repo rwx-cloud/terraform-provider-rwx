@@ -111,7 +111,7 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"repository_permissions": schema.SetNestedAttribute{
-				Description: "The complete set of repositories and branches that can access the vault. Apply replaces this set, including changes made outside Terraform. Omit or set to an empty set to remove all repository permissions.",
+				Description: "The complete set of repositories and branches that can access the vault. Writing this resource replaces this set, including changes made outside this resource. Omit or set to an empty set to remove all repository permissions.",
 				Optional:    true,
 				Computed:    true,
 				Default: setdefault.StaticValue(

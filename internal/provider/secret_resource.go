@@ -63,7 +63,7 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 			},
 			"vault": vaultNameAttribute("The name of a vault in RWX that should hold this secret."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault that should hold this secret. Reference `rwx_vault.<name>.id` for managed vaults.",
+				"The stable ID of the RWX vault that should hold this secret. For a managed vault, use the ID exported by the vault resource.",
 			),
 			"name": schema.StringAttribute{
 				Description: "The name of the secret. Changing this replaces the secret.",
@@ -80,7 +80,7 @@ func (r *SecretResource) Schema(ctx context.Context, req resource.SchemaRequest,
 				},
 			},
 			"secret_value": schema.StringAttribute{
-				Description: "The secret value. RWX cannot return this value during import. Set it in configuration; the first apply after import writes the configured value in place without deleting the secret, even if it matches the existing value. With an import block, this write occurs in the same apply as the import.",
+				Description: "The secret value. RWX cannot return existing secret values, including during import. Keep the desired value in configuration. An update that writes this value overwrites the existing secret value; the existing value cannot be read for comparison.",
 				Required:    true,
 				Sensitive:   true,
 				Validators: []validator.String{
