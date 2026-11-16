@@ -140,6 +140,11 @@ func (r *accessGrantResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
+	if !plan.ExpiresAt.IsNull() && !plan.ExpiresAt.IsUnknown() {
+		expiresAt := equivalentExpiration(expirationPointer(plan.ExpiresAt), state.ExpiresAt)
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("expires_at"), expiresAt)...)
+	}
+
 	privateValue, diags := req.Private.GetKey(ctx, "vault_id")
 	resp.Diagnostics.Append(diags...)
 	previousID := privateVaultID(privateValue, &resp.Diagnostics)
