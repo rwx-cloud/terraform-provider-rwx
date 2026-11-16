@@ -69,7 +69,7 @@ func (r *VaultResource) Metadata(ctx context.Context, req resource.MetadataReque
 func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Manages an RWX vault.",
-		MarkdownDescription: "Manages an RWX vault. Learn more about [vaults](https://www.rwx.com/docs/vaults).",
+		MarkdownDescription: "Manages an RWX vault. See [vaults](https://www.rwx.com/docs/vaults).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the vault.",
@@ -111,7 +111,7 @@ func (r *VaultResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"repository_permissions": schema.SetNestedAttribute{
-				Description: "The complete set of repositories and branches that can access the vault. Apply replaces this set, including changes made outside Terraform. Omit or set to an empty set to remove all repository permissions.",
+				Description: "The complete set of repositories and branches that can access the vault. Writing this resource replaces this set, including changes made outside this resource. Omit or set to an empty set to remove all repository permissions.",
 				Optional:    true,
 				Computed:    true,
 				Default: setdefault.StaticValue(

@@ -54,7 +54,7 @@ func (d *DirectoryGroupDataSource) Schema(ctx context.Context, req datasource.Sc
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1), stringvalidator.ExactlyOneOf(path.MatchRoot("name"))},
 			},
 			"name": schema.StringAttribute{
-				MarkdownDescription: "The exact, case-sensitive group name within the directory. Configure either `id` or `name`. When looking up by ID, returns the current name.",
+				MarkdownDescription: "The exact, case-sensitive group name within the directory. Configure either `id` or `name`. An ID lookup returns the current name.",
 				Optional:            true,
 				Computed:            true,
 				Validators:          []validator.String{stringvalidator.LengthAtLeast(1)},

@@ -38,4 +38,4 @@ data "rwx_directory_group" "by_id" {
 ### Optional
 
 - `id` (String) The stable local RWX directory-group ID, not the external IdP ID. Configure either `id` or `name`.
-- `name` (String) The exact, case-sensitive group name within the directory. Configure either `id` or `name`. When looking up by ID, returns the current name.
+- `name` (String) The exact, case-sensitive group name within the directory. Configure either `id` or `name`. An ID lookup returns the current name.

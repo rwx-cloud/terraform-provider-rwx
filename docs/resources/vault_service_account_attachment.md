@@ -3,12 +3,12 @@
 page_title: "rwx_vault_service_account_attachment Resource - rwx"
 subcategory: ""
 description: |-
-  Attaches a service account to an RWX vault for task-scoped token access. Learn more about assuming a service account in a task https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task.
+  Attaches a service account to an RWX vault for task-scoped token access. See assuming a service account in a task https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task.
 ---
 
 # rwx_vault_service_account_attachment (Resource)
 
-Attaches a service account to an RWX vault for task-scoped token access. Learn more about [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).
+Attaches a service account to an RWX vault for task-scoped token access. See [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).
 
 ## Example Usage
 
@@ -32,12 +32,12 @@ resource "rwx_vault_service_account_attachment" "example" {
 
 ### Required
 
-- `service_account` (String) The service account to attach. Use `rwx_service_account.<name>.key` for a managed account, or look up an existing account by key or ID with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.key` attribute.
+- `service_account` (String) The service account to attach. For a managed account, use the key exported by the service-account resource. For an existing account, use the key returned by the service-account lookup by key or ID.
 
 ### Optional
 
 - `vault` (String) The name of the RWX vault for this service-account attachment. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault for this service-account attachment. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault for this service-account attachment. For a managed vault, use the ID exported by the vault resource. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 
@@ -47,7 +47,7 @@ resource "rwx_vault_service_account_attachment" "example" {
 
 ## Import
 
-Find the attachment ID with [`rwx vaults service-accounts list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/service-accounts/list) (RWX CLI v3.36.1 or later). This requires `vault:manage` on the vault. Use the first-column `ID` from the row matching the service-account name as the second part of the [`terraform import`](https://developer.hashicorp.com/terraform/cli/commands/import) ID:
+Run [`rwx vaults service-accounts list`](https://www.rwx.com/docs/cli-reference/rwx-vaults/service-accounts/list) with RWX CLI v3.36.1 or later to find the attachment ID. You need `vault:manage` on the vault. Find the row matching the service-account name, then use the `ID` in the first column as the second part of the import ID:
 
 ```shell
 rwx vaults service-accounts list --vault 00000000-0000-0000-0000-000000000000

@@ -3,12 +3,12 @@
 page_title: "rwx_vault_user_access_grant Resource - rwx"
 subcategory: ""
 description: |-
-  Manages access to a locked RWX vault for an RWX user. Learn more about locked vaults https://www.rwx.com/docs/vaults#locked-vaults.
+  Manages access to a locked RWX vault for an RWX user. See locked vaults https://www.rwx.com/docs/vaults#locked-vaults.
 ---
 
 # rwx_vault_user_access_grant (Resource)
 
-Manages access to a locked RWX vault for an RWX user. Learn more about [locked vaults](https://www.rwx.com/docs/vaults#locked-vaults).
+Manages access to a locked RWX vault for an RWX user. See [locked vaults](https://www.rwx.com/docs/vaults#locked-vaults).
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "rwx_vault_user_access_grant" "example" {
 
 - `expires_at` (String) The optional ISO 8601 timestamp when access expires. Omit this attribute for permanent access.
 - `vault` (String) The name of the RWX vault to grant access to. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault to grant access to. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault to grant access to. For a managed vault, use the ID exported by the vault resource. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 

@@ -3,12 +3,12 @@
 page_title: "rwx_user Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
+  Looks up an existing active user in the authenticated organization by email or stable RWX user ID. You can use a personal or service-account access token. If the lookup value is known during planning, the lookup runs then; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
 ---
 
 # rwx_user (Data Source)
 
-Looks up an existing active user in the authenticated organization by email or stable RWX user ID using a personal or service-account access token. Known selectors resolve during planning; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
+Looks up an existing active user in the authenticated organization by email or stable RWX user ID. You can use a personal or service-account access token. If the lookup value is known during planning, the lookup runs then; missing or unauthorized lookups fail the plan. This data source does not create or invite users or change memberships.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ data "rwx_user" "by_id" {
 
 ### Optional
 
-- `email` (String) The user's email. Lookup uses case-insensitive exact equality, without trimming, aliases, or fuzzy matching. Configure exactly one of `id` or `email`. Configured email casing is preserved; ID lookups return the stored email.
+- `email` (String) The user's email. The lookup requires an exact, case-insensitive match; it does not trim whitespace, resolve aliases, or use fuzzy matching. Configure exactly one of `id` or `email`. The result preserves the configured email's casing; ID lookups return the stored email.
 - `id` (String) The stable RWX user ID, not the identity ID. Configure exactly one of `id` or `email`.
 
 ### Read-Only

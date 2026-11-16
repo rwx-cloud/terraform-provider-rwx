@@ -3,12 +3,12 @@
 page_title: "rwx_vault Resource - rwx"
 subcategory: ""
 description: |-
-  Manages an RWX vault. Learn more about vaults https://www.rwx.com/docs/vaults.
+  Manages an RWX vault. See vaults https://www.rwx.com/docs/vaults.
 ---
 
 # rwx_vault (Resource)
 
-Manages an RWX vault. Learn more about [vaults](https://www.rwx.com/docs/vaults).
+Manages an RWX vault. See [vaults](https://www.rwx.com/docs/vaults).
 
 ## Example Usage
 
@@ -36,7 +36,7 @@ resource "rwx_vault" "example" {
 ### Optional
 
 - `approvals_enabled` (Boolean) Whether access to the vault requires approval. Default: false.
-- `repository_permissions` (Attributes Set) The complete set of repositories and branches that can access the vault. Apply replaces this set, including changes made outside Terraform. Omit or set to an empty set to remove all repository permissions. (see [below for nested schema](#nestedatt--repository_permissions))
+- `repository_permissions` (Attributes Set) The complete set of repositories and branches that can access the vault. Writing this resource replaces this set, including changes made outside this resource. Omit or set to an empty set to remove all repository permissions. (see [below for nested schema](#nestedatt--repository_permissions))
 - `required_approvals` (Number) The number of approvals required to access the vault when approvals are enabled. Must be at least 1. Default: 1.
 - `unlocked` (Boolean) Whether the vault can be accessed without an explicit access grant. Default: false (locked).
 

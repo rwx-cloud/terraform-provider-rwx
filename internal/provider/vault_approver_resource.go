@@ -49,7 +49,7 @@ func (r *VaultApproverResource) Metadata(ctx context.Context, req resource.Metad
 func (r *VaultApproverResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Manages a user who can approve access to an RWX vault.",
-		MarkdownDescription: "Manages a user who can approve access to an RWX vault. Learn more about [vault approvals](https://www.rwx.com/docs/vaults#approvals).",
+		MarkdownDescription: "Manages a user who can approve access to an RWX vault. See [vault approvals](https://www.rwx.com/docs/vaults#approvals).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the vault approver.",
@@ -57,7 +57,7 @@ func (r *VaultApproverResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault for this approver."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault for this approver. Reference `rwx_vault.<name>.id` for managed vaults.",
+				"The stable ID of the RWX vault for this approver. For a managed vault, use the ID exported by the vault resource.",
 			),
 			"email": schema.StringAttribute{
 				Description: "The email address of the user who can approve vault access.",

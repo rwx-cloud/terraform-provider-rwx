@@ -50,7 +50,7 @@ func (r *VaultServiceAccountAttachmentResource) Metadata(ctx context.Context, re
 func (r *VaultServiceAccountAttachmentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Attaches a service account to an RWX vault for task-scoped token access.",
-		MarkdownDescription: "Attaches a service account to an RWX vault for task-scoped token access. Learn more about [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).",
+		MarkdownDescription: "Attaches a service account to an RWX vault for task-scoped token access. See [assuming a service account in a task](https://www.rwx.com/docs/service-accounts#assuming-a-service-account-in-a-task).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The stable ID of the service-account attachment.",
@@ -58,10 +58,10 @@ func (r *VaultServiceAccountAttachmentResource) Schema(ctx context.Context, req 
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault for this service-account attachment."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault for this service-account attachment. Reference `rwx_vault.<name>.id` for managed vaults.",
+				"The stable ID of the RWX vault for this service-account attachment. For a managed vault, use the ID exported by the vault resource.",
 			),
 			"service_account": schema.StringAttribute{
-				MarkdownDescription: "The service account to attach. Use `rwx_service_account.<name>.key` for a managed account, or look up an existing account by key or ID with the [rwx_service_account data source](https://registry.terraform.io/providers/rwx-cloud/rwx/latest/docs/data-sources/service_account) and use its `.key` attribute.",
+				MarkdownDescription: "The service account to attach. For a managed account, use the key exported by the service-account resource. For an existing account, use the key returned by the service-account lookup by key or ID.",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

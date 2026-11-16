@@ -3,12 +3,12 @@
 page_title: "rwx_service_account Data Source - rwx"
 subcategory: ""
 description: |-
-  Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. Missing matches fail during planning when inputs are known. Display names cannot be used for lookup because they can change. Does not expose credentials or permissions.
+  Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. If the inputs are known during planning, a missing match fails the plan. You cannot look up an account by display name because the name can change. This data source does not expose credentials or permissions.
 ---
 
 # rwx_service_account (Data Source)
 
-Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. Missing matches fail during planning when inputs are known. Display names cannot be used for lookup because they can change. Does not expose credentials or permissions.
+Looks up one active RWX service account by immutable key or ID. Configure exactly one lookup attribute; the remaining attributes return the resolved values. Key matches are exact and case-sensitive. If the inputs are known during planning, a missing match fails the plan. You cannot look up an account by display name because the name can change. This data source does not expose credentials or permissions.
 
 ## Example Usage
 

@@ -3,17 +3,17 @@
 page_title: "rwx_service_account_permissions Resource - rwx"
 subcategory: ""
 description: |-
-  Manages the complete direct-permission set of an RWX service account, separately from its metadata and credentials. Inherited group access is unchanged. Changes made outside Terraform are restored on apply. Destroy clears direct permissions without deactivating the account. Manage each account's direct permissions with only one resource. Import by service-account ID.
-  Known keys, scopes, and acting-token authority are checked against the permission catalog during planning. Checks requiring unknown same-plan IDs are deferred. RWX rechecks authority on apply and rejects an invalid replacement without partial writes.
+  Manages the complete direct-permission set of an RWX service account, separately from its metadata and credentials. Inherited group access is unchanged. Writing this resource replaces the complete direct-permission set, including changes made outside this resource. Deleting this resource clears direct permissions without deactivating the account. Manage each account's direct permissions with only one resource. Import by service-account ID.
+  During planning, the provider checks known permission keys, scopes, and the acting token's authority against the permission catalog. It defers checks that require unknown IDs until those IDs are known. RWX rechecks authority when writing permissions and rejects an invalid replacement without partial writes.
   Required permissions
   The provider's access token needs service_account:manage on the target account for targeted planning and writes. It must also have authority to grant or remove each changed permission at its requested scope. These token requirements are separate from the assignments in permissions. See permissions https://www.rwx.com/docs/permissions.
 ---
 
 # rwx_service_account_permissions (Resource)
 
-Manages the complete direct-permission set of an RWX service account, separately from its metadata and credentials. Inherited group access is unchanged. Changes made outside Terraform are restored on apply. Destroy clears direct permissions without deactivating the account. Manage each account's direct permissions with only one resource. Import by service-account ID.
+Manages the complete direct-permission set of an RWX service account, separately from its metadata and credentials. Inherited group access is unchanged. Writing this resource replaces the complete direct-permission set, including changes made outside this resource. Deleting this resource clears direct permissions without deactivating the account. Manage each account's direct permissions with only one resource. Import by service-account ID.
 
-Known keys, scopes, and acting-token authority are checked against the permission catalog during planning. Checks requiring unknown same-plan IDs are deferred. RWX rechecks authority on apply and rejects an invalid replacement without partial writes.
+During planning, the provider checks known permission keys, scopes, and the acting token's authority against the permission catalog. It defers checks that require unknown IDs until those IDs are known. RWX rechecks authority when writing permissions and rejects an invalid replacement without partial writes.
 
 ## Required permissions
 

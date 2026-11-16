@@ -33,7 +33,7 @@ func (d *GroupDataSource) Metadata(ctx context.Context, req datasource.MetadataR
 
 func (d *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. Missing or ambiguous matches fail during planning when the selector is known.",
+		MarkdownDescription: "Looks up an RWX group by its stable ID or exact name. Configure exactly one of `id` or `name`; both attributes return the resolved values. If the lookup value is known during planning, a missing or ambiguous match fails the plan.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "The stable ID of the group. Configure either `id` or `name`.",

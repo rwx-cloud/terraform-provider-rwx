@@ -50,7 +50,7 @@ func (r *OIDCTokenResource) Metadata(ctx context.Context, req resource.MetadataR
 func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Manages an OIDC token definition stored in an RWX vault.",
-		MarkdownDescription: "Manages an OIDC token definition stored in an RWX vault. Learn more about [OIDC tokens](https://www.rwx.com/docs/oidc).",
+		MarkdownDescription: "Manages an OIDC token definition stored in an RWX vault. See [OIDC tokens](https://www.rwx.com/docs/oidc).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of the OIDC token definition.",
@@ -58,7 +58,7 @@ func (r *OIDCTokenResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"vault": vaultNameAttribute("The name of the RWX vault that holds the OIDC token definition."),
 			"vault_id": vaultIDAttribute(
-				"The stable ID of the RWX vault that holds the OIDC token definition. Reference `rwx_vault.<name>.id` for managed vaults.",
+				"The stable ID of the RWX vault that holds the OIDC token definition. For a managed vault, use the ID exported by the vault resource.",
 			),
 			"name": schema.StringAttribute{
 				Description: "The name of the OIDC token definition. Renaming updates the definition in place.",

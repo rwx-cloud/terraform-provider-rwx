@@ -3,12 +3,12 @@
 page_title: "rwx_variable Resource - rwx"
 subcategory: ""
 description: |-
-  Manages a non-secret variable stored in an RWX vault. Learn more about vars https://www.rwx.com/docs/vars.
+  Manages a non-secret variable stored in an RWX vault. See vars https://www.rwx.com/docs/vars.
 ---
 
 # rwx_variable (Resource)
 
-Manages a non-secret variable stored in an RWX vault. Learn more about [vars](https://www.rwx.com/docs/vars).
+Manages a non-secret variable stored in an RWX vault. See [vars](https://www.rwx.com/docs/vars).
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "rwx_variable" "example" {
 ### Optional
 
 - `vault` (String) The name of a vault in RWX that should hold this variable. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
-- `vault_id` (String) The stable ID of the RWX vault that should hold this variable. Reference `rwx_vault.<name>.id` for managed vaults. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
+- `vault_id` (String) The stable ID of the RWX vault that should hold this variable. For a managed vault, use the ID exported by the vault resource. Specify exactly one of `vault` or `vault_id`. Changing the selected vault replaces the resource; switching between name and ID for the same known vault does not.
 
 ### Read-Only
 

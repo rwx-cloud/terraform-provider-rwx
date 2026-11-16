@@ -8,7 +8,8 @@ description: |-
   Connect and import the directory, review memberships, and activate directory sync in the UI. This resource does not manage activation or IdP rosters. See directory sync https://www.rwx.com/docs/security/directory-sync.
   Reconciliation and retries
   Draft saves finish immediately. Once sync is enabled, creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. reconciliation_timeout controls the wait per write and defaults to 20m.
-  If a save fails or times out, run terraform apply again to retry the desired target. Terraform may mark a failed create as tainted and replace it on the next apply. If a destroy fails or times out, run terraform destroy again. The provider reports an error unless RWX confirms reconciliation succeeded; check the error before retrying if another operation changed the mapping.
+  A failed or timed-out operation may have already changed the mapping in RWX without completing membership reconciliation. The provider reports an error unless RWX confirms reconciliation succeeded. Saved resource state may be absent or still describe the previous target. Removing configuration does not remove a mapping that was never recorded in state. Inspect the error, the current mapping in RWX, and the proposed changes before retrying. A timeout does not roll back the saved mapping.
+  After verifying access to a matching saved mapping, a retry reuses successful reconciliation or waits for pending reconciliation without saving again. Failed or unknown reconciliation allows a repair write. This preflight check does not make concurrent changes atomic.
   Required permissions
   The provider's access token needs group:manage on all affected targets, including former targets. If the provider no longer has the target information needed to remove a mapping, removal requires unscoped group:manage.
 ---
@@ -25,7 +26,9 @@ Connect and import the directory, review memberships, and activate directory syn
 
 Draft saves finish immediately. Once sync is enabled, creates, retargets, and removals wait for membership reconciliation, including when enforcement is subsequently disabled. `reconciliation_timeout` controls the wait per write and defaults to `20m`.
 
-If a save fails or times out, run `terraform apply` again to retry the desired target. Terraform may mark a failed create as tainted and replace it on the next apply. If a destroy fails or times out, run `terraform destroy` again. The provider reports an error unless RWX confirms reconciliation succeeded; check the error before retrying if another operation changed the mapping.
+A failed or timed-out operation may have already changed the mapping in RWX without completing membership reconciliation. The provider reports an error unless RWX confirms reconciliation succeeded. Saved resource state may be absent or still describe the previous target. Removing configuration does not remove a mapping that was never recorded in state. Inspect the error, the current mapping in RWX, and the proposed changes before retrying. A timeout does not roll back the saved mapping.
+
+After verifying access to a matching saved mapping, a retry reuses successful reconciliation or waits for pending reconciliation without saving again. Failed or unknown reconciliation allows a repair write. This preflight check does not make concurrent changes atomic.
 
 ## Required permissions
 
@@ -78,7 +81,7 @@ resource "rwx_directory_group_mapping" "by_name" {
 ### Read-Only
 
 - `id` (String) The stable mapping ID (the local directory-group ID).
-- `reconciliation_status` (String) The current membership reconciliation status. An incomplete or failed save is retried by the next apply.
+- `reconciliation_status` (String) The current membership reconciliation status. An incomplete or failed status means membership reconciliation has not been confirmed; inspect the operation error and current mapping before retrying.
 
 ## Import
 
