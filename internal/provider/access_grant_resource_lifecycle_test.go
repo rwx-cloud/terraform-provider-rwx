@@ -104,6 +104,62 @@ func TestAccessGrantResourceLifecycle(t *testing.T) {
 	})
 }
 
+func TestAccessGrantResourceScopedImport(t *testing.T) {
+	for _, targetFirst := range []bool{false, true} {
+		t.Run(fmt.Sprintf("target-first=%t", targetFirst), func(t *testing.T) {
+			backend := newAccessGrantBackend()
+			deniedVault := api.Vault{ID: "denied-vault", Name: "denied"}
+			if targetFirst {
+				backend.vaults = append(backend.vaults, deniedVault)
+			} else {
+				backend.vaults = append([]api.Vault{deniedVault}, backend.vaults...)
+			}
+			previousClient := http.DefaultClient
+			http.DefaultClient = &http.Client{Transport: backend}
+			t.Cleanup(func() { http.DefaultClient = previousClient })
+
+			resource.UnitTest(t, resource.TestCase{
+				ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+				Steps: []resource.TestStep{
+					{Config: accessGrantConfig("user@example.com", "deploys", nil, nil)},
+					{
+						ResourceName:      "rwx_vault_user_access_grant.test",
+						ImportState:       true,
+						ImportStateVerify: true,
+						ImportStateIdFunc: func(state *terraform.State) (string, error) {
+							return "vault-id/" + state.RootModule().Resources["rwx_vault_user_access_grant.test"].Primary.ID, nil
+						},
+					},
+					{
+						ResourceName:      "rwx_vault_service_account_access_grant.test",
+						ImportState:       true,
+						ImportStateVerify: true,
+						ImportStateIdFunc: func(state *terraform.State) (string, error) {
+							return "vault-id/" + state.RootModule().Resources["rwx_vault_service_account_access_grant.test"].Primary.ID, nil
+						},
+					},
+					{
+						ResourceName: "rwx_vault_user_access_grant.test",
+						ImportState:  true,
+						ImportStateIdFunc: func(state *terraform.State) (string, error) {
+							return "denied-vault/" + state.RootModule().Resources["rwx_vault_user_access_grant.test"].Primary.ID, nil
+						},
+						ExpectError: regexp.MustCompile("vault:manage required"),
+					},
+					{
+						ResourceName: "rwx_vault_service_account_access_grant.test",
+						ImportState:  true,
+						ImportStateIdFunc: func(state *terraform.State) (string, error) {
+							return "denied-vault/" + state.RootModule().Resources["rwx_vault_service_account_access_grant.test"].Primary.ID, nil
+						},
+						ExpectError: regexp.MustCompile("vault:manage required"),
+					},
+				},
+			})
+		})
+	}
+}
+
 func TestAccessGrantResourceDoesNotAdoptExistingGrant(t *testing.T) {
 	backend := newAccessGrantBackend()
 	backend.grants["earlier-grant"] = api.AccessGrant{
@@ -233,10 +289,14 @@ type accessGrantBackend struct {
 	mu     sync.Mutex
 	nextID int
 	grants map[string]api.AccessGrant
+	vaults []api.Vault
 }
 
 func newAccessGrantBackend() *accessGrantBackend {
-	return &accessGrantBackend{grants: make(map[string]api.AccessGrant)}
+	return &accessGrantBackend{
+		grants: make(map[string]api.AccessGrant),
+		vaults: []api.Vault{{ID: "vault-id", Name: "test"}},
+	}
 }
 
 func (b *accessGrantBackend) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -245,7 +305,10 @@ func (b *accessGrantBackend) RoundTrip(req *http.Request) (*http.Response, error
 
 	path := req.URL.Path
 	if req.Method == http.MethodGet && path == "/mint/api/vaults" {
-		return accessGrantJSONResponse(http.StatusOK, map[string]any{"vaults": []api.Vault{{ID: "vault-id", Name: "test"}}}), nil
+		return accessGrantJSONResponse(http.StatusOK, map[string]any{"vaults": b.vaults}), nil
+	}
+	if strings.HasPrefix(path, "/mint/api/vaults/denied-vault/") {
+		return accessGrantJSONResponse(http.StatusForbidden, map[string]any{"errors": []string{"vault:manage required"}}), nil
 	}
 	if path == "/mint/api/vaults/vault-id/access_grants" {
 		switch req.Method {

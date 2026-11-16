@@ -46,10 +46,8 @@ resource "rwx_vault_service_account_access_grant" "example" {
 
 ## Import
 
-Import is supported using the following syntax:
-
-The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+Import with `vault-id/grant-id` to read only the specified vault. The grant ID is the service account's principal identity ID returned by the vault access-grants API. You need `vault:manage` on the specified vault.
 
 ```shell
-terraform import rwx_vault_service_account_access_grant.example 00000000-0000-0000-0000-000000000000
+terraform import rwx_vault_service_account_access_grant.example vault-id/grant-id
 ```
