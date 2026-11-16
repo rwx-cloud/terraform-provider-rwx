@@ -160,6 +160,63 @@ func TestAccessGrantResourceScopedImport(t *testing.T) {
 	}
 }
 
+func TestAccessGrantResourceExpiryPlanning(t *testing.T) {
+	backend := newAccessGrantBackend()
+	previousClient := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: backend}
+	t.Cleanup(func() { http.DefaultClient = previousClient })
+
+	initial := stringPointerValue("2099-12-01T15:00:00.000000Z")
+	initialConfig := accessGrantConfig("user@example.com", "deploys", initial, initial)
+	equivalentConfig := accessGrantConfig("user@example.com", "deploys", stringPointerValue("2099-12-01T15:00:00+00:00"), stringPointerValue("2099-12-01T10:00:00-05:00"))
+	changedConfig := accessGrantConfig("user@example.com", "deploys", stringPointerValue("2099-12-01T15:00:00.000001Z"), stringPointerValue("2099-12-01T15:00:00.123456Z"))
+	unknownConfig := accessGrantConfig("user@example.com", "deploys", nil, stringPointerValue("${terraform_data.expiry.output}")) + `
+resource "terraform_data" "expiry" {
+  input = "2099-12-01T15:00:00.123457Z"
+}
+`
+	var userGrantID, serviceAccountGrantID string
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: initialConfig,
+				Check:  captureAccessGrantIDs(&userGrantID, &serviceAccountGrantID),
+			},
+			{
+				Config:   equivalentConfig,
+				PlanOnly: true,
+			},
+			{
+				Config:             changedConfig,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: changedConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rwx_vault_user_access_grant.test", "expires_at", "2099-12-01T15:00:00.000001Z"),
+					resource.TestCheckResourceAttr("rwx_vault_service_account_access_grant.test", "expires_at", "2099-12-01T15:00:00.123456Z"),
+					checkAccessGrantIDsUnchanged(&userGrantID, &serviceAccountGrantID),
+				),
+			},
+			{
+				Config: unknownConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("rwx_vault_user_access_grant.test", "expires_at"),
+					resource.TestCheckResourceAttr("rwx_vault_service_account_access_grant.test", "expires_at", "2099-12-01T15:00:00.123457Z"),
+					checkAccessGrantIDsUnchanged(&userGrantID, &serviceAccountGrantID),
+				),
+			},
+			{
+				Config:   unknownConfig,
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccessGrantResourceDoesNotAdoptExistingGrant(t *testing.T) {
 	backend := newAccessGrantBackend()
 	backend.grants["earlier-grant"] = api.AccessGrant{
