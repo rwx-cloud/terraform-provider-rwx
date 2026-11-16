@@ -20,6 +20,48 @@ import (
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
 )
 
+func TestImportRejectsMissingOrDeniedObject(t *testing.T) {
+	for _, tc := range []struct {
+		name, id     string
+		makeResource func() resource.Resource
+	}{
+		{"vault", "vault-one", NewVaultResource},
+		{"user_grant", "grant-one", NewVaultUserAccessGrantResource},
+		{"scoped_user_grant", "vault-one/grant-one", NewVaultUserAccessGrantResource},
+		{"service_account_grant", "grant-one", NewVaultServiceAccountAccessGrantResource},
+		{"scoped_service_account_grant", "vault-one/grant-one", NewVaultServiceAccountAccessGrantResource},
+	} {
+		for _, status := range []int{404, 403, 500} {
+			t.Run(fmt.Sprintf("%s/%d", tc.name, status), func(t *testing.T) {
+				ctx := context.Background()
+				client := api.Client{RoundTrip: func(req *http.Request) (*http.Response, error) {
+					if req.Method != http.MethodGet {
+						t.Fatalf("import mutated remote state: %s %s", req.Method, req.URL)
+					}
+					code, body := status, `{"errors":["import rejected"]}`
+					if req.URL.Path == "/mint/api/vaults" {
+						code, body = 200, `{"vaults":[{"id":"vault-one","name":"production"}]}`
+					}
+					return &http.Response{StatusCode: code, Status: http.StatusText(code), Body: io.NopCloser(strings.NewReader(body))}, nil
+				}}
+				r := tc.makeResource()
+				var configured resource.ConfigureResponse
+				r.(resource.ResourceWithConfigure).Configure(ctx, resource.ConfigureRequest{ProviderData: client}, &configured)
+				var schema resource.SchemaResponse
+				r.Schema(ctx, resource.SchemaRequest{}, &schema)
+				imported := resource.ImportStateResponse{State: tfsdk.State{Schema: schema.Schema, Raw: tftypes.NewValue(schema.Schema.Type().TerraformType(ctx), nil)}}
+				r.(resource.ResourceWithImportState).ImportState(ctx, resource.ImportStateRequest{ID: tc.id}, &imported)
+				if !imported.Diagnostics.HasError() || !imported.State.Raw.IsNull() {
+					t.Fatalf("import accepted an unavailable object: %v %v", imported.Diagnostics, imported.State)
+				}
+				if status == 404 && !strings.Contains(imported.Diagnostics[0].Summary(), "non-existent") {
+					t.Fatalf("missing object lacked a useful diagnostic: %v", imported.Diagnostics)
+				}
+			})
+		}
+	}
+}
+
 func TestResourceReadClaimsTerraformManagement(t *testing.T) {
 	cases := []struct {
 		name, id, endpoint, query, body string
