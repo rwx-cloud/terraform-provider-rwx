@@ -270,6 +270,16 @@ func (r *VaultResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 }
 
 func (r *VaultResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
+	if _, err := r.client.GetVault(req.ID); err != nil {
+		if errors.Is(err, api.ErrNotFound) {
+			resp.Diagnostics.AddError("Cannot import non-existent remote object", "No vault exists for import ID "+req.ID+".")
+		} else {
+			resp.Diagnostics.AddError("Error importing vault from RWX", "Unexpected error: "+err.Error())
+		}
+		return
+	}
+
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 

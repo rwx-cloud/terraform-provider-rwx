@@ -302,6 +302,9 @@ func (r *accessGrantResource) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (r *accessGrantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	defer r.reportWarnings(&resp.Diagnostics)
+	var grant api.AccessGrant
+	var err error
 	if strings.Contains(req.ID, "/") {
 		vaultID, grantID, ok := vaultRelationshipImportID(req.ID)
 		if !ok {
@@ -309,12 +312,21 @@ func (r *accessGrantResource) ImportState(ctx context.Context, req resource.Impo
 			return
 		}
 
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), grantID)...)
+		grant, err = r.client.GetAccessGrant(vaultID, grantID)
+	} else {
+		grant, err = r.client.FindAccessGrant(req.ID)
+	}
+	if err != nil {
+		if errors.Is(err, api.ErrNotFound) {
+			resp.Diagnostics.AddError("Cannot import non-existent remote object", "No access grant exists for import ID "+req.ID+".")
+		} else {
+			resp.Diagnostics.AddError("Error importing access grant from RWX", "Unexpected error: "+err.Error())
+		}
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), grant.Vault.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), grant.ID)...)
 }
 
 type accessGrantModelReader interface {
