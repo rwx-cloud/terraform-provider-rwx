@@ -302,6 +302,18 @@ func (r *accessGrantResource) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (r *accessGrantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	if strings.Contains(req.ID, "/") {
+		vaultID, grantID, ok := vaultRelationshipImportID(req.ID)
+		if !ok {
+			resp.Diagnostics.AddError("Invalid access grant import ID", "Use vault-id/grant-id, or a bare grant ID for vault discovery.")
+			return
+		}
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), vaultID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), grantID)...)
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
