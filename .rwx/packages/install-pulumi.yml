@@ -1,0 +1,11 @@
+package: true
+
+tasks:
+  - key: install
+    use: package.use
+    filter: [mise.toml, .tool-versions]
+    run: |
+      mise trust mise.toml
+      mise trust .tool-versions
+      mise install pulumi
+      printf '%s:%s\n' "$(dirname "$(mise which pulumi)")" "$PATH" > "$RWX_ENV/PATH"
