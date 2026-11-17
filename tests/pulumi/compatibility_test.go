@@ -167,7 +167,7 @@ func TestPulumiCompatibility(t *testing.T) {
 		language = "typescript"
 	}
 	switch language {
-	case "typescript":
+	case "typescript", "go":
 	default:
 		t.Fatalf("unsupported Pulumi language: %s", language)
 	}
@@ -212,6 +212,8 @@ func TestPulumiCompatibility(t *testing.T) {
 	switch language {
 	case "typescript":
 		e.run("npm", "install", "--no-audit", "--no-fund")
+	case "go":
+		e.run("go", "mod", "tidy")
 	}
 	e.run("pulumi", "login", "file://"+filepath.Join(work, "backend"), "--non-interactive")
 	e.run("pulumi", "stack", "init", "compatibility", "--non-interactive")
