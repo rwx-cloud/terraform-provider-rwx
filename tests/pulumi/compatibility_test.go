@@ -209,6 +209,10 @@ func TestPulumiCompatibility(t *testing.T) {
 		writeFile(t, filepath.Join(work, file.Name()), string(data))
 	}
 	e.run("pulumi", "package", "add", "terraform-provider@"+strings.TrimSpace(string(adapter)), os.Getenv("RWX_PROVIDER_BINARY"))
+	switch language {
+	case "typescript":
+		e.run("npm", "install", "--no-audit", "--no-fund")
+	}
 	e.run("pulumi", "login", "file://"+filepath.Join(work, "backend"), "--non-interactive")
 	e.run("pulumi", "stack", "init", "compatibility", "--non-interactive")
 	e.env = append(e.env, "RWX_HOST="+host, "RWX_ACCESS_TOKEN="+os.Getenv("RWX_ACCESS_TOKEN"))

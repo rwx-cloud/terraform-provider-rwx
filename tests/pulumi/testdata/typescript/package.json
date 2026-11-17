@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "dependencies": {
+    "@pulumi/pulumi": "3.276.0",
+    "typescript": "5.9.3",
+    "@types/node": "22.10.0"
+  }
+}
