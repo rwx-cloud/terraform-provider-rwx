@@ -1,0 +1,25 @@
+on:
+  cli:
+    init:
+      commit-sha: ${{ event.git.sha }}
+      adapter: ""
+
+base:
+  image: ubuntu:26.04
+  config: rwx/base 1.2.1
+
+tasks:
+  - key: java
+    run: |
+      sudo apt-get update
+      sudo apt-get install --yes --no-install-recommends openjdk-21-jdk-headless maven
+      java --version
+      mvn --version
+
+  - key: test
+    use: java
+    call: ${{ run.dir }}/packages/pulumi-compatibility.yml
+    with:
+      language: java
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ init.adapter }}

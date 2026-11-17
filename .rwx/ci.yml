@@ -94,6 +94,12 @@ tasks:
     use: [go-modules, terraform]
     run: go test -v ./...
 
+  - key: pulumi-compatibility
+    call: ${{ run.dir }}/pulumi.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ""
+
   - key: integration-test
     use: [go-modules, terraform]
     cache: false

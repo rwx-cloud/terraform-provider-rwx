@@ -1,0 +1,2 @@
+[vars]
+pulumi_terraform_adapter = "1.5.1"

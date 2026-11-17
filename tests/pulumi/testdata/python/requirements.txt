@@ -1,0 +1,2 @@
+pulumi==3.276.0
+./sdks/rwx

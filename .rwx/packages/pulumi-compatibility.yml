@@ -1,0 +1,54 @@
+package:
+  parameters:
+    language:
+      required: true
+    commit-sha:
+      required: true
+    adapter:
+      default: ""
+
+tasks:
+  - key: code
+    call: git/clone 2.4.1
+    with:
+      repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
+      ref: ${{ params.commit-sha }}
+
+  - key: mise
+    use: code
+    call: mise/install 1.1.2
+    with:
+      mise-version: "2026.11.9"
+      install: "false"
+    filter: [mise.toml, .tool-versions]
+
+  - key: go
+    call: golang/install 1.3.1
+    with:
+      go-version: ${{ tasks.mise.values.go }}
+
+  - key: pulumi
+    use: [code, mise]
+    call: ${{ run.dir }}/packages/install-pulumi.yml
+
+  - key: build
+    use: [code, go]
+    run: go build -o /tmp/terraform-provider-rwx .
+
+  - key: compatibility
+    use: [package.use, build, pulumi]
+    cache: false
+    timeout: 30m
+    run: |
+      if [ -n "$ADAPTER" ]; then
+        [[ "$ADAPTER" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+        mise config set --file mise.toml vars.pulumi_terraform_adapter "$ADAPTER"
+      fi
+      sha256sum /tmp/terraform-provider-rwx > "$RWX_ARTIFACTS/provider.sha256"
+      go test -count=1 -v -timeout=25m ./tests/pulumi/...
+    env:
+      ADAPTER: ${{ params.adapter }}
+      PULUMI_TEST_LANGUAGE: ${{ params.language }}
+      RWX_PROVIDER_BINARY: /tmp/terraform-provider-rwx
+      PULUMI_E2E: "1"
+      RWX_ACCESS_TOKEN: ${{ vaults.terraform_provider.secrets.rwx-integration-testing-access-token }}

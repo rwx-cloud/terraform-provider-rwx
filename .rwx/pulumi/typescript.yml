@@ -1,0 +1,23 @@
+on:
+  cli:
+    init:
+      commit-sha: ${{ event.git.sha }}
+      adapter: ""
+
+base:
+  image: ubuntu:26.04
+  config: rwx/base 1.2.1
+
+tasks:
+  - key: node
+    call: nodejs/install 1.2.1
+    with:
+      node-version: 22.22.0
+
+  - key: test
+    use: node
+    call: ${{ run.dir }}/packages/pulumi-compatibility.yml
+    with:
+      language: typescript
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ init.adapter }}

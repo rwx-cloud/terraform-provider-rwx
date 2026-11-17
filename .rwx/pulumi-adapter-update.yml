@@ -1,0 +1,98 @@
+on:
+  cron:
+    - key: pulumi-terraform-adapter-update
+      schedule: '0 8 * * * America/New_York'
+      branch: main
+      init:
+        commit-sha: ${{ event.git.sha }}
+        create-pr: true
+  cli:
+    init:
+      commit-sha: ${{ event.git.sha }}
+      create-pr: false
+
+concurrency-pools:
+  - id: rwx-cloud/terraform-provider-rwx:pulumi-adapter-update
+    capacity: 1
+    on-overflow: queue
+
+base:
+  image: ubuntu:26.04
+  config: rwx/base 1.2.1
+
+tasks:
+  - key: code
+    call: git/clone 2.4.1
+    with:
+      repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
+      ref: ${{ init.commit-sha }}
+      preserve-git-dir: true
+
+  - key: mise
+    use: code
+    call: mise/install 1.1.2
+    with:
+      mise-version: "2026.11.9"
+      install: "false"
+    filter: [mise.toml, .tool-versions]
+
+  - key: discover
+    use: [code, mise]
+    cache: false
+    run: |
+      current=$(mise config get --file mise.toml vars.pulumi_terraform_adapter)
+      latest=$(curl --fail --silent --show-error --location --max-time 180 \
+        https://api.github.com/repos/pulumi/pulumi-terraform-provider/releases/latest | jq -er '.tag_name | ltrimstr("v")')
+      jq -n --arg current "$current" --arg latest "$latest" '
+        "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" as $stable |
+        if ([$current, $latest] | all(test($stable))) then
+          {current: $current, candidate: $latest, changed: ($current != $latest)}
+        else error("expected stable adapter versions") end
+      ' | tee "$RWX_ARTIFACTS/adapter-discovery.json"
+      for key in current candidate changed; do
+        jq -r --arg key "$key" '.[$key]' "$RWX_ARTIFACTS/adapter-discovery.json" > "$RWX_VALUES/$key"
+      done
+
+  - key: compatibility
+    if: ${{ tasks.discover.values.changed == 'true' }}
+    call: ${{ run.dir }}/pulumi.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ tasks.discover.values.candidate }}
+
+  - key: prepare-update
+    use: [code, mise]
+    after: compatibility
+    if: ${{ init.create-pr && tasks.discover.values.changed == 'true' }}
+    cache: false
+    run: |
+      [[ "$ADAPTER" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+      main=$(git ls-remote origin refs/heads/main | cut -f1)
+      if [ "$main" != "$TESTED_SHA" ]; then
+        echo 'Main advanced during testing; retry against current main.' >&2
+        exit 1
+      fi
+      test -z "$(git status --porcelain)"
+      mise config set --file mise.toml vars.pulumi_terraform_adapter "$ADAPTER"
+      test "$(git diff --name-only)" = mise.toml
+      git diff -- mise.toml > "$RWX_ARTIFACTS/adapter-update.patch"
+    env:
+      ADAPTER: ${{ tasks.discover.values.candidate }}
+      TESTED_SHA: ${{ init.commit-sha }}
+
+  - key: pull-request
+    use: prepare-update
+    call: github/create-pull-request 1.3.0
+    with:
+      github-token: ${{ vaults.default.github-apps.rwx-cloud-bot.token }}
+      branch-prefix: automation/pulumi-terraform-adapter
+      pull-request-title: Test Pulumi Terraform adapter ${{ tasks.discover.values.candidate }}
+      pull-request-body: |
+        Tested Pulumi terraform-provider adapter ${{ tasks.discover.values.candidate }}
+        against RWX provider source ${{ init.commit-sha }}.
+
+        Compatibility evidence: https://cloud.rwx.com/rwx/runs/${{ run.id }}
+
+        Only the adapter pin changes. Pulumi CLI and RWX provider versions do not change.
+        Auto-merge is enabled after successful compatibility testing. No release is triggered.
+      enable-auto-merge: true
