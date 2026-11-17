@@ -1,0 +1,49 @@
+name: rwx-compatibility
+runtime: yaml
+packages:
+  rwx:
+    source: terraform-provider
+    version: {{ printf "%q" .adapter }}
+    parameters: [{{ printf "%q" .provider }}]
+resources:
+  vault:
+    type: rwx:index/vault:Vault
+    properties:
+      name: {{ printf "%q" .settings.name }}
+{{ if eq .settings.scenario "lifecycle" }}
+  secret:
+    type: rwx:index/secret:Secret
+    properties:
+      {{ if .settings.useVaultId }}vaultId: ${vault.id}{{ else }}vault: ${vault.name}{{ end }}
+      name: shared
+      secretValue: {{ printf "%q" .settings.secret }}
+  variable:
+    type: rwx:index/variable:Variable
+    properties:
+      {{ if .settings.useVaultId }}vaultId: ${vault.id}{{ else }}vault: ${vault.name}{{ end }}
+      name: shared
+      value: {{ if .settings.updated }}after{{ else }}before{{ end }}
+  account:
+    type: rwx:index/serviceAccount:ServiceAccount
+    properties:
+      displayName: {{ printf "%q" .settings.name }}
+      description: {{ if .settings.updated }}after{{ else }}before{{ end }}
+variables:
+  found:
+    fn::invoke:
+      function: rwx:index/getServiceAccount:getServiceAccount
+      arguments:
+        id: ${account.id}
+outputs:
+  deferred: ${found.displayName}
+{{ else }}
+  invalid:
+    type: rwx:index/variable:Variable
+    properties:
+      {{ if .settings.both }}
+      vaultId: ${vault.id}
+      vault: ${vault.name}
+      {{ end }}
+      name: invalid
+      value: invalid
+{{ end }}

@@ -1,6 +1,7 @@
 package pulumi
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/rwx-cloud/terraform-provider-rwx/internal/api"
@@ -67,6 +69,19 @@ func (e *engine) configure(settings map[string]any) {
 		e.t.Fatal(err)
 	}
 	writeFile(e.t, filepath.Join(e.project, "scenario.json"), string(data))
+	if e.language == "yaml" {
+		program, err := template.ParseFiles(filepath.Join("testdata", "yaml", "Pulumi.yaml.tmpl"))
+		if err != nil {
+			e.t.Fatal(err)
+		}
+		var rendered bytes.Buffer
+		if err := program.Execute(&rendered, map[string]any{
+			"settings": settings, "adapter": e.adapter, "provider": os.Getenv("RWX_PROVIDER_BINARY"),
+		}); err != nil {
+			e.t.Fatal(err)
+		}
+		writeFile(e.t, filepath.Join(e.project, "Pulumi.yaml"), rendered.String())
+	}
 }
 
 func (e *engine) up() { e.run("pulumi", "up", "--yes", "--skip-preview", "--non-interactive") }
@@ -167,7 +182,7 @@ func TestPulumiCompatibility(t *testing.T) {
 		language = "typescript"
 	}
 	switch language {
-	case "typescript", "python", "go", "dotnet":
+	case "typescript", "python", "go", "yaml", "dotnet":
 	default:
 		t.Fatalf("unsupported Pulumi language: %s", language)
 	}
@@ -202,6 +217,9 @@ func TestPulumiCompatibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".tmpl") {
+			continue
+		}
 		data, err := os.ReadFile(filepath.Join(programDir, file.Name()))
 		if err != nil {
 			t.Fatal(err)
@@ -326,7 +344,10 @@ func TestPulumiCompatibility(t *testing.T) {
 	if err := json.Unmarshal([]byte(e.run("pulumi", "stack", "output", "--json")), &outputs); err != nil {
 		t.Fatal(err)
 	}
-	wantOutputs := map[string]string{"deferred": name, "ordinary": name}
+	wantOutputs := map[string]string{"deferred": name}
+	if language != "yaml" {
+		wantOutputs["ordinary"] = name
+	}
 	equal(t, outputs, wantOutputs)
 	if _, err := client.SetVariableInVault(selector, api.Variable{Name: "shared", Value: "drift"}); err != nil {
 		t.Fatal(err)

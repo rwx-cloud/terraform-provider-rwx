@@ -27,6 +27,12 @@ tasks:
       commit-sha: ${{ init.commit-sha }}
       adapter: ${{ init.adapter }}
 
+  - key: yaml
+    call: ${{ run.dir }}/pulumi/yaml.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ init.adapter }}
+
   - key: dotnet
     call: ${{ run.dir }}/pulumi/dotnet.yml
     init:
