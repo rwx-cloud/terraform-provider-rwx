@@ -21,30 +21,26 @@ tasks:
       repository: https://github.com/rwx-cloud/terraform-provider-rwx.git
       ref: ${{ init.commit-sha }}
 
-  - key: mise
+  - key: tool-versions
     use: code
-    call: mise/install 1.1.2
-    with:
-      mise-version: "2026.11.9"
-      install: "false"
+    call: rwx/tool-versions 1.1.0
     filter:
       - .tool-versions
-      - mise.toml
 
   - key: go
     call: golang/install 1.3.1
     with:
-      go-version: ${{ tasks.mise.values.go }}
+      go-version: ${{ tasks.tool-versions.values.golang }}
 
   - key: golangci-lint
     use: go
     run: |
-      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v${{ tasks.mise.values.golangci-lint }}
+      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v${{ tasks.tool-versions.values.golangci-lint }}
 
   - key: terraform
     call: hashicorp/install-terraform 1.1.3
     with:
-      terraform-version: ${{ tasks.mise.values.terraform }}
+      terraform-version: ${{ tasks.tool-versions.values.terraform }}
 
   - key: goreleaser
     run: |
@@ -55,7 +51,7 @@ tasks:
       rm $TAR_FILE
       rm -rf $tmpdir
     env:
-      VERSION: "v${{ tasks.mise.values.goreleaser }}"
+      VERSION: "v${{ tasks.tool-versions.values.goreleaser }}"
       RELEASES_URL: "https://github.com/goreleaser/goreleaser/releases"
       TAR_FILE: "goreleaser_Linux_x86_64.tar.gz"
 
