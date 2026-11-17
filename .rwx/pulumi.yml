@@ -38,3 +38,9 @@ tasks:
     init:
       commit-sha: ${{ init.commit-sha }}
       adapter: ${{ init.adapter }}
+
+  - key: java
+    call: ${{ run.dir }}/pulumi/java.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ init.adapter }}

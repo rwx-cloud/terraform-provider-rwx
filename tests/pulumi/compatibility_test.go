@@ -182,7 +182,7 @@ func TestPulumiCompatibility(t *testing.T) {
 		language = "typescript"
 	}
 	switch language {
-	case "typescript", "python", "go", "yaml", "dotnet":
+	case "typescript", "python", "go", "yaml", "dotnet", "java":
 	default:
 		t.Fatalf("unsupported Pulumi language: %s", language)
 	}
@@ -239,6 +239,10 @@ func TestPulumiCompatibility(t *testing.T) {
 		e.run("go", "mod", "tidy")
 	case "dotnet":
 		e.run("dotnet", "restore")
+	case "java":
+		e.run("cp", "-r", "sdks/rwx/src", ".")
+		e.run("mv", "App.java", "src/main/java/App.java")
+		e.run("mvn", "--batch-mode", "--no-transfer-progress", "compile")
 	}
 	e.run("pulumi", "login", "file://"+filepath.Join(work, "backend"), "--non-interactive")
 	e.run("pulumi", "stack", "init", "compatibility", "--non-interactive")
