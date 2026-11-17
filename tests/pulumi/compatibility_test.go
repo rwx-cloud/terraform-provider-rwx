@@ -167,7 +167,7 @@ func TestPulumiCompatibility(t *testing.T) {
 		language = "typescript"
 	}
 	switch language {
-	case "typescript", "go":
+	case "typescript", "python", "go":
 	default:
 		t.Fatalf("unsupported Pulumi language: %s", language)
 	}
@@ -208,10 +208,15 @@ func TestPulumiCompatibility(t *testing.T) {
 		}
 		writeFile(t, filepath.Join(work, file.Name()), string(data))
 	}
+	if language == "python" {
+		e.run("python", "-m", "venv", "venv")
+	}
 	e.run("pulumi", "package", "add", "terraform-provider@"+strings.TrimSpace(string(adapter)), os.Getenv("RWX_PROVIDER_BINARY"))
 	switch language {
 	case "typescript":
 		e.run("npm", "install", "--no-audit", "--no-fund")
+	case "python":
+		e.run("venv/bin/pip", "install", "-r", "requirements.txt")
 	case "go":
 		e.run("go", "mod", "tidy")
 	}

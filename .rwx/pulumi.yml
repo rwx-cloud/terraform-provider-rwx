@@ -15,6 +15,12 @@ tasks:
       commit-sha: ${{ init.commit-sha }}
       adapter: ${{ init.adapter }}
 
+  - key: python
+    call: ${{ run.dir }}/pulumi/python.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      adapter: ${{ init.adapter }}
+
   - key: go
     call: ${{ run.dir }}/pulumi/go.yml
     init:

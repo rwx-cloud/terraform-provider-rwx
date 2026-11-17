@@ -1,0 +1,5 @@
+name: rwx-compatibility
+runtime:
+  name: python
+  options:
+    virtualenv: venv
